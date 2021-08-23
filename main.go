@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
+	"net/url"
 )
 
 /*
@@ -23,6 +25,7 @@ func main() {
 
 	// маршрутизация запросов обработчику
 	http.HandleFunc("/", HelloServer)
+
 
 	// конструируем свой сервер
 	server := &http.Server{
@@ -48,7 +51,12 @@ func main() {
 
 func HelloServer(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Hello, %s!\n", r.URL.Path[1:])
-	//w.Write([]byte("<h1>Hello, World</h1>"))
+	
+	data := url.Values{}
+	data.Set("id1", "google1.com")
+	data.Set("id2", "google2.com")
+	data.Set("id3", "google3.com")
+	
 	switch r.Method {
 	case http.MethodGet:
 		w.Write([]byte("<h1>M Get</h1>"))
@@ -63,8 +71,15 @@ func HelloServer(w http.ResponseWriter, r *http.Request) {
 		// и печатаем его
 		fmt.Println(string(body))
 		fmt.Fprintf(w, "Hello, %v!\n", body)
+		prelim:=string(body)
+		prelim1:=strings.ReplaceAll(prelim,"url=","")
+		var id []string ={"id" "sd"}
+		numi:=string(32)
+		idnum := strings.Join(id,numi)
+
+		data.Set("id3", prelim1)
 	default:
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		http.Error(w, "Method not allowed, bad request", http.StatusBadRequest)
 	}
 
 }
