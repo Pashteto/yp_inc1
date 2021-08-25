@@ -2,13 +2,11 @@ package main
 
 import (
 	"context"
-
 	"net/http"
 	"os"
 	"os/signal"
 
 	"github.com/Pashteto/yp_inc1/handlers"
-
 	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/mux"
 )
