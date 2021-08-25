@@ -36,7 +36,6 @@ func main() {
 	server.ListenAndServe()
 
 	// создаём канал для перехвата сигналов OS bbb 	// перенаправляем сигналы OS в этот канал
-
 	sigint := make(chan os.Signal, 1)
 	signal.Notify(sigint, os.Interrupt)
 	// ожидаем сигнала
