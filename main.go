@@ -19,7 +19,7 @@ func main() {
 		Password: "", // no password set
 		DB:       0,  // use default DB
 	})
-	rdb.Set(ctx, "key0", "value0", 0)
+	//	rdb.Set(ctx, "key0", "value0", 0)
 	sshand := handlers.SpecificHandler{Rdb: *rdb}
 
 	r := mux.NewRouter()
