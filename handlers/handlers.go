@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
@@ -25,9 +26,19 @@ func (h *HandlersWithDBStore) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 
 // Handler for most of the bad requests
 func (h *HandlersWithDBStore) GetHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		http.Error(w, "Get handler recieved wrong method", http.StatusBadRequest)
+		return
+	}
 
-	//id := mux.Vars(r)["key"]
 	id := string(r.URL.Path[1:])
+
+	errRedDb := pingRedisDb(&h.Rdb)
+	if errRedDb != nil {
+		w.Header().Set("Content-Type", "text/plain")
+		http.Error(w, "DB not resonding", http.StatusBadRequest)
+		return
+	}
 	booid, _ := h.Rdb.Exists(ctx, id).Result()
 	if booid > 0 {
 		long_url, _ := h.Rdb.Get(ctx, id).Result()
@@ -50,6 +61,10 @@ func (h *HandlersWithDBStore) EmptyHandler(w http.ResponseWriter, r *http.Reques
 // Puts the new url in the storage
 func (h *HandlersWithDBStore) PostHandler(w http.ResponseWriter, r *http.Request) {
 
+	if r.Method != "POST" {
+		http.Error(w, "Post handler recieved wrong method", http.StatusBadRequest)
+		return
+	}
 	var shorturl string
 	defer r.Body.Close()
 	body, err := ioutil.ReadAll(r.Body)
@@ -57,13 +72,34 @@ func (h *HandlersWithDBStore) PostHandler(w http.ResponseWriter, r *http.Request
 	if err != nil {
 		fmt.Println(err)
 	} else {
-
-		if !strings.Contains(strbody, "http:") && !strings.Contains(strbody, "https:") {
-			strbody = "http://" + strbody
+		if len(strbody) > 0 {
+			if !strings.Contains(strbody, "http:") && !strings.Contains(strbody, "https:") {
+				strbody = "http://" + strbody
+			}
+			id := fmt.Sprint((rand.Intn(1000)))
+			shorturl = "http://localhost/" + id
+			h.Rdb.Set(ctx, id, strbody, 1000*time.Second)
+		} else {
+			http.Error(w, "No URL recieved", http.StatusBadRequest)
 		}
-		id := fmt.Sprint((rand.Intn(1000)))
-		shorturl = "http://localhost/" + id
-		h.Rdb.Set(ctx, id, strbody, 1000*time.Second)
 	}
-	fmt.Fprintf(w, "%v", shorturl)
+	//	fmt.Fprintf(w, "%v", shorturl)
+	w.Write([]byte(shorturl))
+
+}
+
+func pingRedisDb(client *redis.Client) error {
+	//	if client {
+
+	//	}
+	if client == nil {
+		err := errors.New("No Redis DB")
+		return err
+	}
+	_, err := client.Ping(ctx).Result()
+	if err != nil {
+		return err
+	}
+	//fmt.Println(pong, err)
+	return nil
 }
