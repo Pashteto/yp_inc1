@@ -42,5 +42,5 @@ func main() {
 	// ожидаем сигнала
 	<-sigint
 	// получаем сигнал OS и начинаем процедуру «мягкого останова»
-	server.Shutdown(context.Background())
+	server.Shutdown(ctx)
 }

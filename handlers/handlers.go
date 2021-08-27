@@ -21,8 +21,7 @@ type HandlersWithDBStore struct {
 	Rdb redis.Client
 }
 
-func (h *HandlersWithDBStore) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-}
+//func (h *HandlersWithDBStore) ServeHTTP(w http.ResponseWriter, r *http.Request) {}
 
 // Handler for most of the bad requests
 func (h *HandlersWithDBStore) GetHandler(w http.ResponseWriter, r *http.Request) {
