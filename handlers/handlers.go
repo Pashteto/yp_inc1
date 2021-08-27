@@ -6,60 +6,64 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/go-redis/redis/v8"
-	"github.com/gorilla/mux"
 )
 
 var ctx, cancel = context.WithCancel(context.Background())
 
-type SpecificHandler struct {
+// Storing data in this structure to get rid of global var DB
+// data is stored using Redis DB
+type HandlersWithDBStore struct {
 	Rdb redis.Client
 }
 
-func (h *SpecificHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *HandlersWithDBStore) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
-func (h *SpecificHandler) GetHandler(w http.ResponseWriter, r *http.Request) {
+// Handler for most of the bad requests
+func (h *HandlersWithDBStore) GetHandler(w http.ResponseWriter, r *http.Request) {
 
-	id := mux.Vars(r)["key"]
-	//	fmt.Println(maped)
+	//id := mux.Vars(r)["key"]
+	id := string(r.URL.Path[1:])
 	booid, _ := h.Rdb.Exists(ctx, id).Result()
-	// fmt.Println("key2", did)
 	if booid > 0 {
 		long_url, _ := h.Rdb.Get(ctx, id).Result()
+		w.Header().Set("Content-Type", "text/html")
 		http.Redirect(w, r, long_url, http.StatusTemporaryRedirect)
+		w.Write([]byte("Redirect"))
+
 	} else {
-		http.NotFound(w, r)
+		w.Header().Set("Content-Type", "text/plain")
+		http.Error(w, "Wrong id", http.StatusBadRequest)
 	}
 
 }
 
-/*func (h *SpecificHandler) EmptyGetHandler(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, "Method not allowed", http.StatusBadRequest)
-}
-func (h *SpecificHandler) EmptyPostHandler(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, "Method not allowed", http.StatusBadRequest)
-}*/
-func (h *SpecificHandler) EmptyHandler(w http.ResponseWriter, r *http.Request) {
-	//w.Header().Add("google.com")
-	//	http.Redirect(w, r, "https://google.com", http.StatusTemporaryRedirect)
+// Handler for most of the bad requests
+func (h *HandlersWithDBStore) EmptyHandler(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "Method not allowed", http.StatusBadRequest)
 }
 
-func (h *SpecificHandler) PostHandler(w http.ResponseWriter, r *http.Request) {
+// Puts the new url in the storage
+func (h *HandlersWithDBStore) PostHandler(w http.ResponseWriter, r *http.Request) {
 
 	var shorturl string
 	defer r.Body.Close()
-	// читаем поток из тела ответа
 	body, err := ioutil.ReadAll(r.Body)
+	strbody := string(body)
 	if err != nil {
 		fmt.Println(err)
 	} else {
+
+		if !strings.Contains(strbody, "http:") && !strings.Contains(strbody, "https:") {
+			strbody = "http://" + strbody
+		}
 		id := fmt.Sprint((rand.Intn(1000)))
 		shorturl = "http://localhost/" + id
-		h.Rdb.Set(ctx, id, string(body), 1000*time.Second)
+		h.Rdb.Set(ctx, id, strbody, 1000*time.Second)
 	}
 	fmt.Fprintf(w, "%v", shorturl)
 }
