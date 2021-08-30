@@ -21,9 +21,7 @@ type HandlersWithDBStore struct {
 	Rdb redis.Client
 }
 
-//func (h *HandlersWithDBStore) ServeHTTP(w http.ResponseWriter, r *http.Request) {}
-
-// Handler for most of the bad requests
+// Get for most of the bad requests
 func (h *HandlersWithDBStore) GetHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
 		http.Error(w, "Get handler recieved wrong method", http.StatusBadRequest)
@@ -57,7 +55,7 @@ func (h *HandlersWithDBStore) EmptyHandler(w http.ResponseWriter, r *http.Reques
 	http.Error(w, "Method not allowed", http.StatusBadRequest)
 }
 
-// Puts the new url in the storage
+// Post puts the new url in the storage
 func (h *HandlersWithDBStore) PostHandler(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method != "POST" {
@@ -102,3 +100,5 @@ func pingRedisDb(client *redis.Client) error {
 	//fmt.Println(pong, err)
 	return nil
 }
+
+//func (h *HandlersWithDBStore) ServeHTTP(w http.ResponseWriter, r *http.Request) {}

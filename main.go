@@ -14,13 +14,14 @@ import (
 var ctx = context.Background()
 
 func main() {
+	// initialising redis DB
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379",
 		Password: "", // no password set
 		DB:       0,  // use default DB
 	})
 	defer rdb.Close()
-
+	// Passing the DB to the new obj with methods
 	sshand := handlers.HandlersWithDBStore{Rdb: *rdb}
 
 	r := mux.NewRouter()
