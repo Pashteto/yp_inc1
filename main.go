@@ -21,13 +21,13 @@ func main() {
 		DB:       0,  // use default DB
 	})
 	defer rdb.Close()
-	// Passing the DB to the new obj with methods
+	// Passing the DB to the new obj with Handlers as methods
 	sshand := handlers.HandlersWithDBStore{Rdb: *rdb}
 
 	r := mux.NewRouter()
-	r.HandleFunc("/{key}", sshand.GetHandler).Methods("GET")
-	r.HandleFunc("/", sshand.PostHandler).Methods("POST")
-	r.HandleFunc("/", sshand.EmptyHandler)
+	r.HandleFunc("/{key}", sshand.GetHandler).Methods("GET") //routing get with the {key}
+	r.HandleFunc("/", sshand.PostHandler).Methods("POST")    //routing post
+	r.HandleFunc("/", sshand.EmptyHandler)                   //routing other
 
 	http.Handle("/", r)
 
