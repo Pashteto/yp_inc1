@@ -22,7 +22,7 @@ type HandlersWithDBStore struct {
 	Rdb redis.Client
 }
 
-// Get for most of the bad requests
+// Get Handler provides with initial URLs stored by their ids
 func (h *HandlersWithDBStore) GetHandler(w http.ResponseWriter, r *http.Request) {
 
 	id := string(r.URL.Path[1:])
@@ -46,10 +46,11 @@ func (h *HandlersWithDBStore) GetHandler(w http.ResponseWriter, r *http.Request)
 
 }
 
+/* Commented due to being unnesessary - the router does this automatically
 // Handler for Bad requests
 func (h *HandlersWithDBStore) HandlerBadRequest(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "Bad request", http.StatusBadRequest)
-}
+}*/
 
 // Post puts the new url in the storage
 func (h *HandlersWithDBStore) PostHandler(w http.ResponseWriter, r *http.Request) {
