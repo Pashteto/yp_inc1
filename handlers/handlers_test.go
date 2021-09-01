@@ -9,6 +9,8 @@ import (
 
 	"github.com/go-redis/redis/v8"
 	"github.com/stretchr/testify/assert"
+	//	"github.com/stretchr/testify/mock"
+	//	"github.com/alicebob/miniredis/v2"
 )
 
 func TestHandlersWithDBStore_GetHandler(t *testing.T) {
@@ -19,7 +21,7 @@ func TestHandlersWithDBStore_GetHandler(t *testing.T) {
 		contentType    string
 		id             string
 		method         string
-		response       string
+		///	response       string
 	}
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379",
@@ -52,35 +54,24 @@ func TestHandlersWithDBStore_GetHandler(t *testing.T) {
 			fields: fields{
 				rdb:            *rdb,
 				code:           307,
-				contentType:    "text/html",
+				contentType:    "text/html; charset=utf-8",
 				id:             "this_id_is_a_correct_id",
 				headerLocation: "http://google.com",
 				method:         "GET",
 			},
 		},
-		{
-			name: "Test 3: Get Handler recieved wrong method",
-			fields: fields{
-				rdb:            *rdb,
-				code:           400,
-				contentType:    "text/plain; charset=utf-8",
-				id:             "this_id_is_a_correct_id",
-				headerLocation: "",
-				method:         "PST",
-				response:       "Get handler recieved wrong method\n",
-			},
-		},
+		/*
 
-		/*        testing the DB: if it is initialised / connected?
-		{
-			name: "Test 3: Get Handler with no DB",
-			fields: fields{
-				code:           400,
-				id:             "any_id",
-				contentType:    "text/plain; charset=utf-8",
-				headerLocation: "",
-			},
-		},*/
+			//      testing the DB: if it is initialised / connected?
+			{
+				name: "Test 3: Get Handler with no DB",
+				fields: fields{
+					code:           400,
+					id:             "any_id",
+					contentType:    "text/plain; charset=utf-8",
+					headerLocation: "",
+				},
+			},*/
 
 		//eo tests setup
 	}
@@ -117,6 +108,7 @@ func TestHandlersWithDBStore_PostHandler(t *testing.T) {
 		post_address string
 		response     string
 		method       string
+		//	rdbb         *redisDBMock
 	}
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379",
@@ -155,36 +147,26 @@ func TestHandlersWithDBStore_PostHandler(t *testing.T) {
 				method:       "POST",
 			},
 		},
-		{
-			name: "Test 3: Post Handler Wrong method",
+		/*
+			{
+			name: "Test 3: Post Handler DB broken",
 			fields: fields{
 				rdb:  *rdb,
 				code: 400,
 				//				contentType:    "text/plain; charset=utf-8",
 				//				headerLocation: "",
 				post_address: "",
-				response:     "Post handler recieved wrong method\n",
-				method:       "",
+				response:     "ERROR DB method\n",
+				method: "",
 			},
-		},
-		/*		{
-				name: "Test 4: Post Handler DB broken",
-				fields: fields{
-					rdb:  *rdb,
-					code: 400,
-					//				contentType:    "text/plain; charset=utf-8",
-					//				headerLocation: "",
-					post_address: "",
-					response:     "ERROR DB method\n",
-					method: "",
-				},
-			},*/
+		},*/
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			hObj := &HandlersWithDBStore{
 				Rdb: tt.fields.rdb,
 			}
+
 			endpoint := "http://localhost:8080/"
 			data := tt.fields.post_address //url.Values{"url": {tt.fields.post_address}}
 

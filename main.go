@@ -11,6 +11,15 @@ import (
 	"github.com/gorilla/mux"
 )
 
+/*
+Задание для трека «Go в веб-разработке». Напишите сервис для сокращения длинных URL. Требования:
+- Сервер должен быть доступен по адресу: http://localhost:8080.
+- Сервер должен предоставлять два эндпоинта: POST / и GET /{id}.
+- Эндпоинт POST / принимает в теле запроса строку URL для сокращения и возвращает в ответ правильный сокращённый URL.
+- Эндпоинт GET /{id} принимает в качестве URL параметра идентификатор сокращённого URL и возвращает ответ с кодом 307 и оригинальным URL в HTTP-заголовке Location.
+- Нужно учесть некорректные запросы и возвращать для них ответ с кодом 400.
+*/
+
 var ctx = context.Background()
 
 func main() {
@@ -27,7 +36,7 @@ func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/{key}", sshand.GetHandler).Methods("GET") //routing get with the {key}
 	r.HandleFunc("/", sshand.PostHandler).Methods("POST")    //routing post
-	r.HandleFunc("/", sshand.EmptyHandler)                   //routing other
+	r.HandleFunc("/", sshand.HandlerBadRequest)              //routing others as Bad requests
 
 	http.Handle("/", r)
 
@@ -42,6 +51,6 @@ func main() {
 	signal.Notify(sigint, os.Interrupt)
 	// ожидаем сигнала
 	<-sigint
-	// получаем сигнал OS и начинаем процедуру «мягкого останова»
+	// получаем сигнал OS и начинаем процедуру «мягкой остановки»
 	server.Shutdown(ctx)
 }

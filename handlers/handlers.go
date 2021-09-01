@@ -4,7 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
+	"log"
 	"math/rand"
 	"net/http"
 	"strings"
@@ -13,7 +14,7 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
-var ctx, cancel = context.WithCancel(context.Background())
+var ctx, _ = context.WithCancel(context.Background())
 
 // Storing data in this structure to get rid of global var DB
 // data is stored using Redis DB
@@ -23,81 +24,78 @@ type HandlersWithDBStore struct {
 
 // Get for most of the bad requests
 func (h *HandlersWithDBStore) GetHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "GET" {
-		http.Error(w, "Get handler recieved wrong method", http.StatusBadRequest)
-		return
-	}
 
 	id := string(r.URL.Path[1:])
 
-	errRedDb := pingRedisDb(&h.Rdb)
-	if errRedDb != nil {
-		w.Header().Set("Content-Type", "text/plain")
-		http.Error(w, "DB not resonding", http.StatusBadRequest)
+	errReadDb := h.pingRedisDb(&h.Rdb)
+	if errReadDb != nil {
+		log.Println(errReadDb)
+		http.Error(w, "DB not resonding", http.StatusInternalServerError)
 		return
 	}
 	booid, _ := h.Rdb.Exists(ctx, id).Result()
 	if booid > 0 {
 		long_url, _ := h.Rdb.Get(ctx, id).Result()
-		w.Header().Set("Content-Type", "text/html")
 		http.Redirect(w, r, long_url, http.StatusTemporaryRedirect)
 		w.Write([]byte("Redirect"))
 
 	} else {
 		w.Header().Set("Content-Type", "text/plain")
-		http.Error(w, "Wrong id", http.StatusBadRequest)
+		http.Error(w, fmt.Sprintf("Wrong short URL id: %v", id), http.StatusBadRequest)
 	}
 
 }
 
-// Handler for most of the bad requests
-func (h *HandlersWithDBStore) EmptyHandler(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, "Method not allowed", http.StatusBadRequest)
+// Handler for Bad requests
+func (h *HandlersWithDBStore) HandlerBadRequest(w http.ResponseWriter, r *http.Request) {
+	http.Error(w, "Bad request", http.StatusBadRequest)
 }
 
 // Post puts the new url in the storage
 func (h *HandlersWithDBStore) PostHandler(w http.ResponseWriter, r *http.Request) {
-
-	if r.Method != "POST" {
-		http.Error(w, "Post handler recieved wrong method", http.StatusBadRequest)
+	errReadDb := h.pingRedisDb(&h.Rdb)
+	if errReadDb != nil {
+		log.Println(errReadDb)
+		http.Error(w, "DB not resonding", http.StatusInternalServerError)
 		return
 	}
 	var shorturl string
-	defer r.Body.Close()
-	body, err := ioutil.ReadAll(r.Body)
-	strbody := string(body)
+
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		fmt.Println(err)
-	} else {
-		if len(strbody) > 0 {
-			if !strings.Contains(strbody, "http:") && !strings.Contains(strbody, "https:") {
-				strbody = "http://" + strbody
-			}
-			id := fmt.Sprint((rand.Intn(1000)))
-			shorturl = "http://localhost/" + id
-			h.Rdb.Set(ctx, id, strbody, 1000*time.Second)
-		} else {
-			http.Error(w, "No URL recieved", http.StatusBadRequest)
-		}
+		log.Println(err)
+		http.Error(w, "unable to parse body", http.StatusBadRequest)
+		return
 	}
-	//	fmt.Fprintf(w, "%v", shorturl)
+	strbody := string(body)
+	if len(strbody) > 0 {
+		if !strings.Contains(strbody, "http:") && !strings.Contains(strbody, "https:") {
+			strbody = "http://" + strbody
+		}
+		id := fmt.Sprint((rand.Intn(1000)))
+		hostProto := "http://"
+		if r.TLS != nil {
+			hostProto = "https://"
+		}
+		hostName := hostProto + strings.Split(r.Host, ":")[0]
+		shorturl = hostName + "/" + id
+		h.Rdb.Set(ctx, id, strbody, 1000*time.Second)
+	} else {
+		http.Error(w, "No URL recieved", http.StatusBadRequest)
+	}
+
 	w.Write([]byte(shorturl))
 
 }
 
-func pingRedisDb(client *redis.Client) error {
-	//	if client {
-
-	//	}
+func (h *HandlersWithDBStore) pingRedisDb(client *redis.Client) error {
 	if client == nil {
-		err := errors.New("No Redis DB")
-		return err
+		return errors.New("no redis db")
 	}
 	_, err := client.Ping(ctx).Result()
 	if err != nil {
 		return err
 	}
-	//fmt.Println(pong, err)
 	return nil
 }
 
