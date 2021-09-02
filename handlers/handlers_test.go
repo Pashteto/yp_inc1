@@ -81,6 +81,7 @@ func TestHandlersWithDBStore_GetHandler(t *testing.T) {
 			h := http.HandlerFunc(hObj.GetHandler)
 			h.ServeHTTP(w, request)
 			res := w.Result()
+			defer res.Body.Close()
 			// test StatusCode
 			if res.StatusCode != tt.fields.code {
 				t.Errorf("Expected status code %d, got %d", tt.fields.code, w.Code)

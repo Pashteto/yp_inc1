@@ -28,28 +28,28 @@ type HandlersWithDBStore struct {
 func (h *HandlersWithDBStore) GetHandler(w http.ResponseWriter, r *http.Request) {
 	id := string(r.URL.Path[1:])
 
-	errReadDb := h.pingRedisDB(&h.Rdb)
-	if errReadDb != nil {
-		log.Println(errReadDb)
+	errReadDB := h.pingRedisDB(&h.Rdb)
+	if errReadDB != nil {
+		log.Println(errReadDB)
 		http.Error(w, "DB not resonding", http.StatusInternalServerError)
 		return
 	}
-	count_id, _ := h.Rdb.Exists(ctx, id).Result()
-	if count_id == 0 {
+	countID, _ := h.Rdb.Exists(ctx, id).Result()
+	if countID == 0 {
 		w.Header().Set("Content-Type", "text/plain")
 		http.Error(w, fmt.Sprintf("Wrong short URL id: %v", id), http.StatusBadRequest)
 		return
 	}
-	long_url, _ := h.Rdb.Get(ctx, id).Result()
-	http.Redirect(w, r, long_url, http.StatusTemporaryRedirect)
+	longURL, _ := h.Rdb.Get(ctx, id).Result()
+	http.Redirect(w, r, longURL, http.StatusTemporaryRedirect)
 	w.Write([]byte("Redirect"))
 }
 
 // Post puts the new url in the storage
 func (h *HandlersWithDBStore) PostHandler(w http.ResponseWriter, r *http.Request) {
-	errReadDb := h.pingRedisDB(&h.Rdb)
-	if errReadDb != nil {
-		log.Println(errReadDb)
+	errReadDB := h.pingRedisDB(&h.Rdb)
+	if errReadDB != nil {
+		log.Println(errReadDB)
 		http.Error(w, "DB not resonding", http.StatusInternalServerError)
 		return
 	}
