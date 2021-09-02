@@ -28,7 +28,7 @@ type HandlersWithDBStore struct {
 func (h *HandlersWithDBStore) GetHandler(w http.ResponseWriter, r *http.Request) {
 	id := string(r.URL.Path[1:])
 
-	errReadDb := h.pingRedisDb(&h.Rdb)
+	errReadDb := h.pingRedisDB(&h.Rdb)
 	if errReadDb != nil {
 		log.Println(errReadDb)
 		http.Error(w, "DB not resonding", http.StatusInternalServerError)
@@ -47,7 +47,7 @@ func (h *HandlersWithDBStore) GetHandler(w http.ResponseWriter, r *http.Request)
 
 // Post puts the new url in the storage
 func (h *HandlersWithDBStore) PostHandler(w http.ResponseWriter, r *http.Request) {
-	errReadDb := h.pingRedisDb(&h.Rdb)
+	errReadDb := h.pingRedisDB(&h.Rdb)
 	if errReadDb != nil {
 		log.Println(errReadDb)
 		http.Error(w, "DB not resonding", http.StatusInternalServerError)
@@ -80,7 +80,7 @@ func (h *HandlersWithDBStore) PostHandler(w http.ResponseWriter, r *http.Request
 	w.Write([]byte(shorturl))
 }
 
-func (h *HandlersWithDBStore) pingRedisDb(client *redis.Client) error {
+func (h *HandlersWithDBStore) pingRedisDB(client *redis.Client) error {
 	if client == nil {
 		return errors.New("no redis db")
 	}
