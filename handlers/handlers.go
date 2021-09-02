@@ -78,6 +78,11 @@ func (h *HandlersWithDBStore) PostHandler(w http.ResponseWriter, r *http.Request
 	shorturl = config.String(h.Conf) + "/" + id
 	h.Rdb.Set(ctx, id, longURL.String(), 1000*time.Second)
 	w.Write([]byte(shorturl))
+	w.WriteHeader(http.StatusCreated)
+}
+
+func (h *HandlersWithDBStore) EmptyHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusCreated)
 }
 
 func (h *HandlersWithDBStore) pingRedisDB(client *redis.Client) error {
