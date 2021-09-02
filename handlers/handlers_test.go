@@ -98,12 +98,12 @@ func TestHandlersWithDBStore_GetHandler(t *testing.T) {
 
 func TestHandlersWithDBStore_PostHandler(t *testing.T) {
 	type fields struct {
-		rdb          redis.Client
-		code         int
-		post_address string
-		response     string
-		method       string
-		conf         *config.Config
+		rdb         redis.Client
+		code        int
+		postAddress string
+		response    string
+		method      string
+		conf        *config.Config
 	}
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379",
@@ -125,23 +125,23 @@ func TestHandlersWithDBStore_PostHandler(t *testing.T) {
 		{
 			name: "Test 1: Post Handler correct response",
 			fields: fields{
-				rdb:          *rdb,
-				code:         200,
-				post_address: "http://example.com",
-				response:     "http://localhost:8080/81",
-				method:       "POST",
-				conf:         &conf,
+				rdb:         *rdb,
+				code:        200,
+				postAddress: "http://example.com",
+				response:    "http://localhost:8080/81",
+				method:      "POST",
+				conf:        &conf,
 			},
 		},
 		{
 			name: "Test 2: Post Handler empty body",
 			fields: fields{
-				rdb:          *rdb,
-				code:         400,
-				post_address: "",
-				response:     "No URL recieved\n",
-				method:       "POST",
-				conf:         &conf,
+				rdb:         *rdb,
+				code:        400,
+				postAddress: "",
+				response:    "No URL recieved\n",
+				method:      "POST",
+				conf:        &conf,
 			},
 		},
 	}
@@ -153,7 +153,7 @@ func TestHandlersWithDBStore_PostHandler(t *testing.T) {
 			}
 
 			endpoint := "http://localhost:8080/"
-			data := tt.fields.post_address
+			data := tt.fields.postAddress
 
 			request, err := http.NewRequest(tt.fields.method, endpoint, bytes.NewBufferString(data))
 			if err != nil {
