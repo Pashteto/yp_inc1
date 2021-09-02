@@ -9,8 +9,6 @@ import (
 
 	"github.com/go-redis/redis/v8"
 	"github.com/stretchr/testify/assert"
-	//	"github.com/stretchr/testify/mock"
-	//	"github.com/alicebob/miniredis/v2"
 )
 
 func TestHandlersWithDBStore_GetHandler(t *testing.T) {
@@ -108,7 +106,6 @@ func TestHandlersWithDBStore_PostHandler(t *testing.T) {
 		post_address string
 		response     string
 		method       string
-		//	rdbb         *redisDBMock
 	}
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379",
