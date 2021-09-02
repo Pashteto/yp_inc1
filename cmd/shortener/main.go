@@ -33,10 +33,10 @@ func main() {
 		log.Println("Unable to read config file conf.json:\t", err)
 	}
 
-	err2 := godotenv.Load()
-	if err2 != nil {
+	godotenv.Load()
+	/*if err2 != nil {
 		log.Fatal("Error loading .env file")
-	}
+	}*/
 
 	// initialising redis DB
 	rdb := redis.NewClient(&redis.Options{
