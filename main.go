@@ -2,11 +2,14 @@ package main
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
 
+	"github.com/Pashteto/yp_inc1/config"
 	"github.com/Pashteto/yp_inc1/handlers"
+
 	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/mux"
 )
@@ -23,6 +26,11 @@ import (
 var ctx = context.Background()
 
 func main() {
+	var conf config.Config
+	err := config.ReadFile(&conf)
+	if err != nil {
+		log.Println("Unable to read config file conf.json:\t", err)
+	}
 	// initialising redis DB
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379",
@@ -30,13 +38,13 @@ func main() {
 		DB:       0,  // use default DB
 	})
 	defer rdb.Close()
+
 	// Passing the DB to the new obj with Handlers as methods
-	sshand := handlers.HandlersWithDBStore{Rdb: *rdb}
+	sshand := handlers.HandlersWithDBStore{Rdb: *rdb, Conf: &conf}
 
 	r := mux.NewRouter()
 	r.HandleFunc("/{key}", sshand.GetHandler).Methods("GET") //routing get with the {key}
 	r.HandleFunc("/", sshand.PostHandler).Methods("POST")    //routing post
-	//	r.HandleFunc("/", sshand.HandlerBadRequest)              //routing others as Bad requests
 
 	http.Handle("/", r)
 

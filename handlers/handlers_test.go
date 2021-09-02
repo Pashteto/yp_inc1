@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/Pashteto/yp_inc1/config"
 	"github.com/go-redis/redis/v8"
 	"github.com/stretchr/testify/assert"
 )
@@ -19,7 +20,7 @@ func TestHandlersWithDBStore_GetHandler(t *testing.T) {
 		contentType    string
 		id             string
 		method         string
-		///	response       string
+		conf           *config.Config
 	}
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379",
@@ -29,6 +30,13 @@ func TestHandlersWithDBStore_GetHandler(t *testing.T) {
 	defer rdb.Close()
 
 	rdb.Set(ctx, "this_id_is_a_correct_id", "http://google.com", 0)
+
+	var conf config.Config
+	err := config.ReadFile(&conf)
+	if err != nil {
+		t.Errorf("Unable to read config file conf.json:\t%v", err)
+		return
+	}
 
 	tests := []struct {
 		name   string
@@ -45,6 +53,7 @@ func TestHandlersWithDBStore_GetHandler(t *testing.T) {
 				contentType:    "text/plain; charset=utf-8",
 				headerLocation: "",
 				method:         "GET",
+				conf:           &conf,
 			},
 		},
 		{
@@ -56,28 +65,16 @@ func TestHandlersWithDBStore_GetHandler(t *testing.T) {
 				id:             "this_id_is_a_correct_id",
 				headerLocation: "http://google.com",
 				method:         "GET",
+				conf:           &conf,
 			},
 		},
-		/*
-
-			//      testing the DB: if it is initialised / connected?
-			{
-				name: "Test 3: Get Handler with no DB",
-				fields: fields{
-					code:           400,
-					id:             "any_id",
-					contentType:    "text/plain; charset=utf-8",
-					headerLocation: "",
-				},
-			},*/
-
-		//eo tests setup
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
 			hObj := &HandlersWithDBStore{
-				Rdb: tt.fields.rdb,
+				Rdb:  tt.fields.rdb,
+				Conf: &conf,
 			}
 			request := httptest.NewRequest(tt.fields.method, "/"+tt.fields.id, nil)
 			w := httptest.NewRecorder()
@@ -106,6 +103,7 @@ func TestHandlersWithDBStore_PostHandler(t *testing.T) {
 		post_address string
 		response     string
 		method       string
+		conf         *config.Config
 	}
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379",
@@ -113,59 +111,49 @@ func TestHandlersWithDBStore_PostHandler(t *testing.T) {
 		DB:       0,  // use default DB
 	})
 	defer rdb.Close()
-
+	var conf config.Config
+	err := config.ReadFile(&conf)
+	if err != nil {
+		t.Errorf("Unable to read config file conf.json:\t%v", err)
+		return
+	}
 	tests := []struct {
 		name   string
 		fields fields
 	}{
 		// tests list
 		{
-			name: "Test 1: Post Handler fine response",
+			name: "Test 1: Post Handler correct response",
 			fields: fields{
-				rdb:  *rdb,
-				code: 200,
-				//				id:             "this_id_is_a_wrong_id",
-				//contentType:    "text/plain; charset=utf-8",
-				//headerLocation: "",
+				rdb:          *rdb,
+				code:         200,
 				post_address: "http://example.com",
-				response:     "http://localhost/81",
+				response:     "http://localhost:8080/81",
 				method:       "POST",
+				conf:         &conf,
 			},
 		},
 		{
 			name: "Test 2: Post Handler empty body",
 			fields: fields{
-				rdb:  *rdb,
-				code: 400,
-				//				contentType:    "text/plain; charset=utf-8",
-				//				headerLocation: "",
+				rdb:          *rdb,
+				code:         400,
 				post_address: "",
 				response:     "No URL recieved\n",
 				method:       "POST",
+				conf:         &conf,
 			},
 		},
-		/*
-			{
-			name: "Test 3: Post Handler DB broken",
-			fields: fields{
-				rdb:  *rdb,
-				code: 400,
-				//				contentType:    "text/plain; charset=utf-8",
-				//				headerLocation: "",
-				post_address: "",
-				response:     "ERROR DB method\n",
-				method: "",
-			},
-		},*/
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			hObj := &HandlersWithDBStore{
-				Rdb: tt.fields.rdb,
+				Rdb:  tt.fields.rdb,
+				Conf: &conf,
 			}
 
 			endpoint := "http://localhost:8080/"
-			data := tt.fields.post_address //url.Values{"url": {tt.fields.post_address}}
+			data := tt.fields.post_address
 
 			request, err := http.NewRequest(tt.fields.method, endpoint, bytes.NewBufferString(data))
 			if err != nil {

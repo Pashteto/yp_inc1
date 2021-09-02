@@ -8,9 +8,10 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
-	"strings"
+	"net/url"
 	"time"
 
+	"github.com/Pashteto/yp_inc1/config"
 	"github.com/go-redis/redis/v8"
 )
 
@@ -19,12 +20,12 @@ var ctx, _ = context.WithCancel(context.Background())
 // Storing data in this structure to get rid of global var DB
 // data is stored using Redis DB
 type HandlersWithDBStore struct {
-	Rdb redis.Client
+	Rdb  redis.Client
+	Conf *config.Config
 }
 
 // Get Handler provides with initial URLs stored by their ids
 func (h *HandlersWithDBStore) GetHandler(w http.ResponseWriter, r *http.Request) {
-
 	id := string(r.URL.Path[1:])
 
 	errReadDb := h.pingRedisDb(&h.Rdb)
@@ -33,24 +34,16 @@ func (h *HandlersWithDBStore) GetHandler(w http.ResponseWriter, r *http.Request)
 		http.Error(w, "DB not resonding", http.StatusInternalServerError)
 		return
 	}
-	booid, _ := h.Rdb.Exists(ctx, id).Result()
-	if booid > 0 {
-		long_url, _ := h.Rdb.Get(ctx, id).Result()
-		http.Redirect(w, r, long_url, http.StatusTemporaryRedirect)
-		w.Write([]byte("Redirect"))
-
-	} else {
+	count_id, _ := h.Rdb.Exists(ctx, id).Result()
+	if count_id == 0 {
 		w.Header().Set("Content-Type", "text/plain")
 		http.Error(w, fmt.Sprintf("Wrong short URL id: %v", id), http.StatusBadRequest)
+		return
 	}
-
+	long_url, _ := h.Rdb.Get(ctx, id).Result()
+	http.Redirect(w, r, long_url, http.StatusTemporaryRedirect)
+	w.Write([]byte("Redirect"))
 }
-
-/* Commented due to being unnesessary - the router does this automatically
-// Handler for Bad requests
-func (h *HandlersWithDBStore) HandlerBadRequest(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, "Bad request", http.StatusBadRequest)
-}*/
 
 // Post puts the new url in the storage
 func (h *HandlersWithDBStore) PostHandler(w http.ResponseWriter, r *http.Request) {
@@ -69,24 +62,22 @@ func (h *HandlersWithDBStore) PostHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 	strbody := string(body)
-	if len(strbody) > 0 {
-		if !strings.Contains(strbody, "http:") && !strings.Contains(strbody, "https:") {
-			strbody = "http://" + strbody
-		}
-		id := fmt.Sprint((rand.Intn(1000)))
-		hostProto := "http://"
-		if r.TLS != nil {
-			hostProto = "https://"
-		}
-		hostName := hostProto + strings.Split(r.Host, ":")[0]
-		shorturl = hostName + "/" + id
-		h.Rdb.Set(ctx, id, strbody, 1000*time.Second)
-	} else {
-		http.Error(w, "No URL recieved", http.StatusBadRequest)
+	longUrl, err := url.Parse(strbody)
+	if err != nil {
+		http.Error(w, "Unable to parse URL", http.StatusBadRequest)
+		return
 	}
-
+	if len(strbody) == 0 {
+		http.Error(w, "No URL recieved", http.StatusBadRequest)
+		return
+	}
+	if !longUrl.IsAbs() {
+		longUrl.Scheme = "http"
+	}
+	id := fmt.Sprint((rand.Intn(1000)))
+	shorturl = config.String(h.Conf) + "/" + id
+	h.Rdb.Set(ctx, id, longUrl.String(), 1000*time.Second)
 	w.Write([]byte(shorturl))
-
 }
 
 func (h *HandlersWithDBStore) pingRedisDb(client *redis.Client) error {
@@ -99,5 +90,3 @@ func (h *HandlersWithDBStore) pingRedisDb(client *redis.Client) error {
 	}
 	return nil
 }
-
-//func (h *HandlersWithDBStore) ServeHTTP(w http.ResponseWriter, r *http.Request) {}
