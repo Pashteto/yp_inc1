@@ -7,9 +7,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/Pashteto/yp_inc1/config"
 	"github.com/go-redis/redis/v8"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/Pashteto/yp_inc1/config"
 )
 
 func TestHandlersWithDBStore_GetHandler(t *testing.T) {
