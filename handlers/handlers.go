@@ -62,7 +62,7 @@ func (h *HandlersWithDBStore) PostHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 	strbody := string(body)
-	longUrl, err := url.Parse(strbody)
+	longURL, err := url.Parse(strbody)
 	if err != nil {
 		http.Error(w, "Unable to parse URL", http.StatusBadRequest)
 		return
@@ -71,12 +71,12 @@ func (h *HandlersWithDBStore) PostHandler(w http.ResponseWriter, r *http.Request
 		http.Error(w, "No URL recieved", http.StatusBadRequest)
 		return
 	}
-	if !longUrl.IsAbs() {
-		longUrl.Scheme = "http"
+	if !longURL.IsAbs() {
+		longURL.Scheme = "http"
 	}
 	id := fmt.Sprint((rand.Intn(1000)))
 	shorturl = config.String(h.Conf) + "/" + id
-	h.Rdb.Set(ctx, id, longUrl.String(), 1000*time.Second)
+	h.Rdb.Set(ctx, id, longURL.String(), 1000*time.Second)
 	w.Write([]byte(shorturl))
 }
 
