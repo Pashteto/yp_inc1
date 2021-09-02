@@ -50,6 +50,9 @@ jobs:
         run: |
           go run ./cmd/shortener/... &
           timeout 10 sh -c 'until lsof -i:8080; do sleep 1s; done'
+        env:
+          # The hostname used to communicate with the Redis service container
+          REDIS_HOST: redis
 
       - name: "[Code increment #1] Check basic handlers"
         if: always()

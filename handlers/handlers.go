@@ -77,8 +77,8 @@ func (h *HandlersWithDBStore) PostHandler(w http.ResponseWriter, r *http.Request
 	id := fmt.Sprint((rand.Intn(1000)))
 	shorturl = config.String(h.Conf) + "/" + id
 	h.Rdb.Set(ctx, id, longURL.String(), 1000*time.Second)
-	w.Write([]byte(shorturl))
 	w.WriteHeader(http.StatusCreated)
+	w.Write([]byte(shorturl))
 }
 
 func (h *HandlersWithDBStore) EmptyHandler(w http.ResponseWriter, r *http.Request) {

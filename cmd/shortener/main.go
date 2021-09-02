@@ -12,6 +12,7 @@ import (
 
 	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/mux"
+	"github.com/joho/godotenv"
 )
 
 /*
@@ -31,9 +32,15 @@ func main() {
 	if err != nil {
 		log.Println("Unable to read config file conf.json:\t", err)
 	}
+
+	err2 := godotenv.Load()
+	if err2 != nil {
+		log.Fatal("Error loading .env file")
+	}
+
 	// initialising redis DB
 	rdb := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
+		Addr:     os.Getenv("REDIS_HOST") + ":6379",
 		Password: "", // no password set
 		DB:       0,  // use default DB
 	})
