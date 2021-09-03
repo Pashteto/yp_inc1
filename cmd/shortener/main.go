@@ -28,16 +28,20 @@ var ctx = context.Background()
 
 func main() {
 	var conf config.Config
-	err := config.ReadFile(&conf)
+	/*err := config.ReadFile(&conf)
 	if err != nil {
 		log.Println("Unable to read config file conf.json:\t", err)
-	}
-
-	godotenv.Load()
-	/*if err2 != nil {
-		log.Fatal("Error loading .env file")
 	}*/
 
+	godotenv.Load()
+	log.Println(os.Getenv("REDIS_HOST"))
+	log.Println(os.Getenv("APP_BASE_HOST"))
+	log.Println(os.Getenv("APP_PORT"))
+	log.Println(os.Getenv("APP_BASE_URL"))
+	conf.RecieveEnv(os.Getenv("REDIS_HOST"), os.Getenv("APP_PORT"), os.Getenv("APP_BASE_URL"))
+	/*if erf != nil {
+		log.Println("Unable to read config file conf.json:\t", erf)
+	}*/
 	// initialising redis DB
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     os.Getenv("REDIS_HOST") + ":6379",
