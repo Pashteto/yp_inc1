@@ -28,13 +28,19 @@ func ReadFile(cfg *Config) error {
 }
 
 func (cfg *Config) RecieveEnv(envHost, envPort, envURL string) error {
-	cfg.Host = envHost
-	cfg.Port = envPort
-	envURLParsed, err := url.Parse(envURL)
-	if err != nil {
-		return err
+	if envHost != "" {
+		cfg.Host = envHost
 	}
-	cfg.Scheme = envURLParsed.Scheme
+	if envPort != "" {
+		cfg.Port = envPort
+	}
+	if envURL != "" {
+		envURLParsed, err := url.Parse(envURL)
+		if err != nil {
+			return err
+		}
+		cfg.Scheme = envURLParsed.Scheme
+	}
 	return nil
 }
 

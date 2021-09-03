@@ -37,7 +37,7 @@ func main() {
 		log.Println(os.Getenv("APP_BASE_HOST"))
 		log.Println(os.Getenv("APP_PORT"))
 		log.Println(os.Getenv("APP_BASE_URL"))*/
-	conf.RecieveEnv(os.Getenv("REDIS_HOST"), os.Getenv("APP_PORT"), os.Getenv("APP_BASE_URL"))
+	conf.RecieveEnv(os.Getenv("APP_BASE_HOST"), os.Getenv("APP_PORT"), os.Getenv("APP_BASE_URL"))
 	/*if erf != nil {
 		log.Println("Unable to read config file conf.json:\t", erf)
 	}*/
