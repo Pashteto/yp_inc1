@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -75,14 +74,17 @@ func (h *HandlersWithDBStore) PostHandler(w http.ResponseWriter, r *http.Request
 	if !longURL.IsAbs() {
 		longURL.Scheme = "http"
 	}
-	id := fmt.Sprint((rand.Intn(1000)))
-	//shorturl: = config.String(h.Conf) + "/" + id
-	shorturl1, _ := url.Parse(config.String(h.Conf) + "/" + id)
-	h.Rdb.Set(ctx, id, longURL.String(), 1000*time.Second)
 	w.WriteHeader(http.StatusCreated)
-	varsh, _ := json.Marshal(shorturl1)
+	id := fmt.Sprint((rand.Intn(1000)))
+	h.Rdb.Set(ctx, id, longURL.String(), 1000*time.Second)
+	shorturl := config.String(h.Conf) + "/" + id
+	data := url.Values{}
+	data.Set("url", shorturl)
+	//shorturl1, _ := url.Parse(config.String(h.Conf) + "/" + id)
+	//varsh, _ := json.Marshal(shorturl1)
 	//	w.Write([]byte(shorturl))
-	w.Write(varsh)
+	//w.Write(varsh)
+	w.Write([]byte(data.Encode()))
 }
 
 func (h *HandlersWithDBStore) EmptyHandler(w http.ResponseWriter, r *http.Request) {
