@@ -42,7 +42,7 @@ func (h *HandlersWithDBStore) GetHandler(w http.ResponseWriter, r *http.Request)
 	}
 	longURL, _ := h.Rdb.Get(ctx, id).Result()
 	http.Redirect(w, r, longURL, http.StatusTemporaryRedirect)
-	w.Write([]byte("Redirect"))
+	//	w.Write([]byte("Redirect"))
 }
 
 // Post puts the new url in the storage
@@ -78,13 +78,13 @@ func (h *HandlersWithDBStore) PostHandler(w http.ResponseWriter, r *http.Request
 	id := fmt.Sprint((rand.Intn(1000)))
 	h.Rdb.Set(ctx, id, longURL.String(), 1000*time.Second)
 	shorturl := config.String(h.Conf) + "/" + id
-	data := url.Values{}
-	data.Set("url", shorturl)
+	//data := url.Values{}
+	//data.Set("url", shorturl)
 	//shorturl1, _ := url.Parse(config.String(h.Conf) + "/" + id)
 	//varsh, _ := json.Marshal(shorturl1)
-	//	w.Write([]byte(shorturl))
+	w.Write([]byte(shorturl))
 	//w.Write(varsh)
-	w.Write([]byte(data.Encode()))
+	//w.Write([]byte(data.Encode()))
 }
 
 func (h *HandlersWithDBStore) EmptyHandler(w http.ResponseWriter, r *http.Request) {
