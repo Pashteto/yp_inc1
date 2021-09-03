@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -53,7 +54,7 @@ func (h *HandlersWithDBStore) PostHandler(w http.ResponseWriter, r *http.Request
 		http.Error(w, "DB not resonding", http.StatusInternalServerError)
 		return
 	}
-	var shorturl string
+	//var shorturl string
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -75,11 +76,13 @@ func (h *HandlersWithDBStore) PostHandler(w http.ResponseWriter, r *http.Request
 		longURL.Scheme = "http"
 	}
 	id := fmt.Sprint((rand.Intn(1000)))
-	shorturl = config.String(h.Conf) + "/" + id
+	//shorturl: = config.String(h.Conf) + "/" + id
+	shorturl1, _ := url.Parse(config.String(h.Conf) + "/" + id)
 	h.Rdb.Set(ctx, id, longURL.String(), 1000*time.Second)
 	w.WriteHeader(http.StatusCreated)
-
-	w.Write([]byte(shorturl))
+	varsh, _ := json.Marshal(shorturl1)
+	//	w.Write([]byte(shorturl))
+	w.Write(varsh)
 }
 
 func (h *HandlersWithDBStore) EmptyHandler(w http.ResponseWriter, r *http.Request) {

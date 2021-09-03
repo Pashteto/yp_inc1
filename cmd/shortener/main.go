@@ -55,7 +55,7 @@ func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/{key}", sshand.GetHandler).Methods("GET") //routing get with the {key}
 	r.HandleFunc("/", sshand.PostHandler).Methods("POST")    //routing post
-	r.HandleFunc("/", sshand.EmptyHandler)                   //routing post
+	//r.HandleFunc("/", sshand.EmptyHandler)                   //routing post
 
 	http.Handle("/", r)
 
