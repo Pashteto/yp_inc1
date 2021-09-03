@@ -40,6 +40,8 @@ func (cfg *Config) RecieveEnv(envHost, envPort, envURL string) error {
 			return err
 		}
 		cfg.Scheme = envURLParsed.Scheme
+		cfg.Host = envURLParsed.Hostname()
+		cfg.Port = envURLParsed.Path
 	}
 	return nil
 }
