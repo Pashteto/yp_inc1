@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -28,16 +27,16 @@ var ctx = context.Background()
 
 func main() {
 	var conf config.Config
-	/*err := config.ReadFile(&conf)
-	if err != nil {
+	config.ReadFile(&conf)
+	/*if err != nil {
 		log.Println("Unable to read config file conf.json:\t", err)
 	}*/
 
 	godotenv.Load()
-	log.Println(os.Getenv("REDIS_HOST"))
-	log.Println(os.Getenv("APP_BASE_HOST"))
-	log.Println(os.Getenv("APP_PORT"))
-	log.Println(os.Getenv("APP_BASE_URL"))
+	/*	log.Println(os.Getenv("REDIS_HOST"))
+		log.Println(os.Getenv("APP_BASE_HOST"))
+		log.Println(os.Getenv("APP_PORT"))
+		log.Println(os.Getenv("APP_BASE_URL"))*/
 	conf.RecieveEnv(os.Getenv("REDIS_HOST"), os.Getenv("APP_PORT"), os.Getenv("APP_BASE_URL"))
 	/*if erf != nil {
 		log.Println("Unable to read config file conf.json:\t", erf)
