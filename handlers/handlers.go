@@ -101,3 +101,9 @@ func (h *HandlersWithDBStore) pingRedisDB(client *redis.Client) error {
 	}
 	return nil
 }
+
+type shortenResponse struct {
+	url string `config:"URL"`
+	/*Port   string `config:"SERVER_PORT"`
+	Scheme string `config:"SERVER_SCHEME"`*/
+}

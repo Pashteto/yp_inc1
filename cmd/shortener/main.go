@@ -73,9 +73,3 @@ func main() {
 	// получаем сигнал OS и начинаем процедуру «мягкой остановки»
 	server.Shutdown(ctx)
 }
-
-type shortenResponse struct {
-	url string `config:"URL"`
-	/*Port   string `config:"SERVER_PORT"`
-	Scheme string `config:"SERVER_SCHEME"`*/
-}
