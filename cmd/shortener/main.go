@@ -53,9 +53,9 @@ func main() {
 	sshand := handlers.HandlersWithDBStore{Rdb: *rdb, Conf: &conf}
 
 	r := mux.NewRouter()
-	r.HandleFunc("/{key}", sshand.GetHandler).Methods("GET") //routing get with the {key}
-	r.HandleFunc("/", sshand.PostHandler).Methods("POST")    //routing post
-	//r.HandleFunc("/", sshand.EmptyHandler)                   //routing post
+	r.HandleFunc("/{key}", sshand.GetHandler).Methods("GET")             //routing get with the {key}
+	r.HandleFunc("/api/shorten", sshand.PostHandlerJSON).Methods("POST") //routing post w JSON
+	r.HandleFunc("/", sshand.PostHandler).Methods("POST")                //routing post
 
 	http.Handle("/", r)
 
