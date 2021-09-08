@@ -128,7 +128,7 @@ func TestHandlersWithDBStore_PostHandler(t *testing.T) {
 			name: "Test 1: Post Handler correct response",
 			fields: fields{
 				rdb:         *rdb,
-				code:        200,
+				code:        201,
 				postAddress: "http://example.com",
 				response:    "http://localhost:8080/81",
 				method:      "POST",

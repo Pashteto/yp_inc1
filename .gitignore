@@ -2,3 +2,5 @@
 **/.vscode
 ._.vscode
 .env
+handlers/conf.json
+cmd/shortener/conf.json
