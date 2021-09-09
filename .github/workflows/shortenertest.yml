@@ -53,23 +53,28 @@ jobs:
         run: |
           shortenertest -test.v -test.run=^TestIteration1$ -binary-path=cmd/shortener/shortener
         env:
-          # The hostname used to communicate with the Redis service container
           REDIS_HOST: redis
           
       - name: "Code increment #2"
         if: always()
         run: |
           shortenertest -test.v -test.run=^TestIteration2$ -source-path=.
+        env:
+          REDIS_HOST: redis
 
       - name: "Code increment #3"
         if: always()
         run: |
           shortenertest -test.v -test.run=^TestIteration3$ -source-path=.
+        env:
+          REDIS_HOST: redis
 
       - name: "Code increment #4"
         if: always()
         run: |
           shortenertest -test.v -test.run=^TestIteration4$ -source-path=. -binary-path=cmd/shortener/shortener
+        env:
+          REDIS_HOST: redis
 
       - name: "Code increment #5"
         if: always()
@@ -81,6 +86,8 @@ jobs:
               -server-host=$SERVER_HOST \
               -server-port=$SERVER_PORT \
               -server-base-url="http://$SERVER_HOST:$SERVER_PORT"
+        env:
+          REDIS_HOST: redis
 
       - name: "Code increment #6"
         if: always()
@@ -91,6 +98,8 @@ jobs:
               -binary-path=cmd/shortener/shortener \
               -server-port=$SERVER_PORT \
               -file-storage-path=$TEMP_FILE
+        env:
+          REDIS_HOST: redis
 
       - name: "Code increment #7"
         if: always()
@@ -101,8 +110,12 @@ jobs:
               -binary-path=cmd/shortener/shortener \
               -server-port=$SERVER_PORT \
               -file-storage-path=$TEMP_FILE
+        env:
+          REDIS_HOST: redis
 
       - name: "Code increment #8"
         if: always()
         run: |
           shortenertest -test.v -test.run=^TestIteration8$ -source-path=. -binary-path=cmd/shortener/shortener
+        env:
+          REDIS_HOST: redis
