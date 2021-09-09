@@ -68,7 +68,7 @@ func (h *HandlersWithDBStore) PostHandler(w http.ResponseWriter, r *http.Request
 		http.Error(w, "No URL recieved", http.StatusBadRequest)
 		return
 	}
-
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte(config.String(h.Conf) + "/" + id))
 }
@@ -119,8 +119,8 @@ func (h *HandlersWithDBStore) PostHandlerJSON(w http.ResponseWriter, r *http.Req
 		http.Error(w, "unable to marshall short URL", http.StatusServiceUnavailable)
 		return
 	}
-	w.WriteHeader(http.StatusCreated)
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
 	w.Write(output)
 }
 
