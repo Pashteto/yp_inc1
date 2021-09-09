@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/Pashteto/yp_inc1/config"
-	"github.com/go-redis/redis/v8"
+	"github.com/Pashteto/yp_inc1/repos"
 )
 
 var ctx, _ = context.WithCancel(context.Background())
@@ -21,7 +21,7 @@ var ctx, _ = context.WithCancel(context.Background())
 // Storing data in this structure to get rid of global var DB
 // data is stored using Redis DB
 type HandlersWithDBStore struct {
-	Rdb  redis.Client
+	Rdb  repos.SetterGetter // redis.Client
 	Conf *config.Config
 }
 
@@ -29,26 +29,24 @@ type HandlersWithDBStore struct {
 func (h *HandlersWithDBStore) GetHandler(w http.ResponseWriter, r *http.Request) {
 	id := string(r.URL.Path[1:])
 
-	errReadDB := h.pingRedisDB(&h.Rdb)
+	errReadDB := h.pingRedisDB(h.Rdb)
 	if errReadDB != nil {
 		log.Println(errReadDB)
 		http.Error(w, "DB not resonding Get", http.StatusInternalServerError)
 		return
 	}
-	countID, _ := h.Rdb.Exists(ctx, id).Result()
-	if countID == 0 {
+	longURL, _ := h.Rdb.Get(ctx, id) //.Result()
+	if longURL == "" {
 		w.Header().Set("Content-Type", "text/plain")
 		http.Error(w, fmt.Sprintf("Wrong short URL id: %v", id), http.StatusBadRequest)
 		return
 	}
-	longURL, _ := h.Rdb.Get(ctx, id).Result()
 	http.Redirect(w, r, longURL, http.StatusTemporaryRedirect)
-	//	w.Write([]byte("Redirect"))
 }
 
 // Post puts the new url in the storage
 func (h *HandlersWithDBStore) PostHandler(w http.ResponseWriter, r *http.Request) {
-	errReadDB := h.pingRedisDB(&h.Rdb)
+	errReadDB := h.pingRedisDB(h.Rdb)
 	if errReadDB != nil {
 		log.Println(errReadDB)
 		http.Error(w, "DB not resonding Post", http.StatusInternalServerError)
@@ -65,7 +63,7 @@ func (h *HandlersWithDBStore) PostHandler(w http.ResponseWriter, r *http.Request
 		http.Error(w, "Unable to parse URL", http.StatusBadRequest)
 		return
 	}
-	id, err := PostInDBReturnID(&h.Rdb, longURL)
+	id, err := PostInDBReturnID(h.Rdb, longURL)
 	if err != nil {
 		http.Error(w, "No URL recieved", http.StatusBadRequest)
 		return
@@ -75,7 +73,7 @@ func (h *HandlersWithDBStore) PostHandler(w http.ResponseWriter, r *http.Request
 	w.Write([]byte(config.String(h.Conf) + "/" + id))
 }
 
-func PostInDBReturnID(client *redis.Client, longURL *url.URL) (string, error) {
+func PostInDBReturnID(client repos.SetterGetter, longURL *url.URL) (string, error) {
 	if longURL.Host == "" && longURL.Path == "" {
 		return "", errors.New("no URL recieved")
 	}
@@ -89,7 +87,7 @@ func PostInDBReturnID(client *redis.Client, longURL *url.URL) (string, error) {
 
 // Post puts the new url in the storage with JSON input
 func (h *HandlersWithDBStore) PostHandlerJSON(w http.ResponseWriter, r *http.Request) {
-	errReadDB := h.pingRedisDB(&h.Rdb)
+	errReadDB := h.pingRedisDB(h.Rdb)
 	if errReadDB != nil {
 		log.Println(errReadDB)
 		http.Error(w, "DB not resonding Post JSON", http.StatusInternalServerError)
@@ -108,7 +106,7 @@ func (h *HandlersWithDBStore) PostHandlerJSON(w http.ResponseWriter, r *http.Req
 		http.Error(w, "unable to unmarshal JSON", http.StatusBadRequest)
 		return
 	}
-	id, err := PostInDBReturnID(&h.Rdb, inputURL.CollectedURL)
+	id, err := PostInDBReturnID(h.Rdb, inputURL.CollectedURL)
 	if err != nil {
 		http.Error(w, "No URL recieved", http.StatusBadRequest)
 		return
@@ -129,11 +127,11 @@ func (h *HandlersWithDBStore) EmptyHandler(w http.ResponseWriter, r *http.Reques
 	w.WriteHeader(http.StatusCreated)
 }
 
-func (h *HandlersWithDBStore) pingRedisDB(client *redis.Client) error {
+func (h *HandlersWithDBStore) pingRedisDB(client repos.SetterGetter) error {
 	if client == nil {
 		return errors.New("no redis db")
 	}
-	_, err := client.Ping(ctx).Result()
+	err := client.Ping(ctx)
 	if err != nil {
 		return err
 	}

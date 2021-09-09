@@ -2,19 +2,22 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/Pashteto/yp_inc1/config"
-	"github.com/go-redis/redis/v8"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
+//Test of GetHandler
 func TestHandlersWithDBStore_GetHandler(t *testing.T) {
 	type fields struct {
-		rdb            redis.Client
+		rdb            repositoryMock //redis.Client
 		code           int
 		headerLocation string
 		contentType    string
@@ -22,14 +25,10 @@ func TestHandlersWithDBStore_GetHandler(t *testing.T) {
 		method         string
 		conf           *config.Config
 	}
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "", // no password set
-		DB:       0,  // use default DB
-	})
-	defer rdb.Close()
-
-	rdb.Set(ctx, "this_id_is_a_correct_id", "http://google.com", 0)
+	repoMock := new(repositoryMock)
+	repoMock.On("Ping", mock.MatchedBy(func(_ context.Context) bool { return true })).Return(nil)
+	repoMock.On("Get", mock.MatchedBy(func(_ context.Context) bool { return true }), "this_id_is_a_wrong_id").Return("", nil)
+	repoMock.On("Get", mock.MatchedBy(func(_ context.Context) bool { return true }), "this_id_is_a_correct_id").Return("http://example.com", nil)
 
 	var conf config.Config
 	err := config.ReadFile(&conf)
@@ -42,12 +41,11 @@ func TestHandlersWithDBStore_GetHandler(t *testing.T) {
 		name   string
 		fields fields
 	}{
-
 		// tests list
 		{
 			name: "Test 1: Get Handler with wrong id",
 			fields: fields{
-				rdb:            *rdb,
+				rdb:            *repoMock,
 				code:           400,
 				id:             "this_id_is_a_wrong_id",
 				contentType:    "text/plain; charset=utf-8",
@@ -59,11 +57,11 @@ func TestHandlersWithDBStore_GetHandler(t *testing.T) {
 		{
 			name: "Test 2: Get Handler with correct id",
 			fields: fields{
-				rdb:            *rdb,
+				rdb:            *repoMock,
 				code:           307,
 				contentType:    "text/html; charset=utf-8",
 				id:             "this_id_is_a_correct_id",
-				headerLocation: "http://google.com",
+				headerLocation: "http://example.com",
 				method:         "GET",
 				conf:           &conf,
 			},
@@ -97,21 +95,29 @@ func TestHandlersWithDBStore_GetHandler(t *testing.T) {
 	}
 }
 
+//Test of PostHandler
 func TestHandlersWithDBStore_PostHandler(t *testing.T) {
 	type fields struct {
-		rdb         redis.Client
+		rdb         repositoryMock //redis.Client
 		code        int
 		postAddress string
 		response    string
 		method      string
 		conf        *config.Config
 	}
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "", // no password set
-		DB:       0,  // use default DB
-	})
-	defer rdb.Close()
+	repoMock := new(repositoryMock)
+	repoMock.On("Ping", mock.MatchedBy(func(_ context.Context) bool { return true })).Return(nil)
+
+	repoMock.On("Set",
+		mock.MatchedBy(func(_ context.Context) bool { return true }),
+		mock.MatchedBy(func(_ string) bool { return true }),
+		"http://example.com",
+		mock.MatchedBy(func(_ time.Duration) bool { return true })).Return(nil)
+
+	repoMock.On("Set", mock.MatchedBy(func(_ context.Context) bool { return true }),
+		mock.MatchedBy(func(_ string) bool { return true }), "",
+		mock.MatchedBy(func(_ time.Duration) bool { return true })).Return(nil)
+
 	var conf config.Config
 	err := config.ReadFile(&conf)
 	if err != nil {
@@ -126,7 +132,7 @@ func TestHandlersWithDBStore_PostHandler(t *testing.T) {
 		{
 			name: "Test 1: Post Handler correct response",
 			fields: fields{
-				rdb:         *rdb,
+				rdb:         *repoMock,
 				code:        201,
 				postAddress: "http://example.com",
 				response:    "http://localhost:8080/81",
@@ -137,7 +143,7 @@ func TestHandlersWithDBStore_PostHandler(t *testing.T) {
 		{
 			name: "Test 2: Post Handler empty body",
 			fields: fields{
-				rdb:         *rdb,
+				rdb:         *repoMock,
 				code:        400,
 				postAddress: "",
 				response:    "No URL recieved\n",
@@ -182,21 +188,29 @@ func TestHandlersWithDBStore_PostHandler(t *testing.T) {
 	}
 }
 
+//Test of PostHandlerJSON
 func TestHandlersWithDBStore_PostHandlerJSON(t *testing.T) {
 	type fields struct {
-		rdb         redis.Client
+		rdb         repositoryMock //redis.Client
 		code        int
 		postAddress string
 		response    string
 		method      string
 		conf        *config.Config
 	}
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "", // no password set
-		DB:       0,  // use default DB
-	})
-	defer rdb.Close()
+	repoMock := new(repositoryMock)
+	repoMock.On("Ping", mock.MatchedBy(func(_ context.Context) bool { return true })).Return(nil)
+
+	repoMock.On("Set",
+		mock.MatchedBy(func(_ context.Context) bool { return true }),
+		mock.MatchedBy(func(_ string) bool { return true }),
+		"http://example.com",
+		mock.MatchedBy(func(_ time.Duration) bool { return true })).Return(nil)
+
+	repoMock.On("Set", mock.MatchedBy(func(_ context.Context) bool { return true }),
+		mock.MatchedBy(func(_ string) bool { return true }), "",
+		mock.MatchedBy(func(_ time.Duration) bool { return true })).Return(nil)
+
 	var conf config.Config
 	err := config.ReadFile(&conf)
 	if err != nil {
@@ -211,7 +225,7 @@ func TestHandlersWithDBStore_PostHandlerJSON(t *testing.T) {
 		{
 			name: "Test 1: Post Handler correct response",
 			fields: fields{
-				rdb:         *rdb,
+				rdb:         *repoMock,
 				code:        201,
 				postAddress: "{\"url\":\"http://example.com\"}",
 				response:    "{\"result\":\"http://localhost:8080/887\"}",
@@ -222,7 +236,7 @@ func TestHandlersWithDBStore_PostHandlerJSON(t *testing.T) {
 		{
 			name: "Test 2: Post Handler empty JSON",
 			fields: fields{
-				rdb:         *rdb,
+				rdb:         *repoMock,
 				code:        400,
 				postAddress: "",
 				response:    "unable to unmarshal JSON\n",
@@ -233,7 +247,7 @@ func TestHandlersWithDBStore_PostHandlerJSON(t *testing.T) {
 		{
 			name: "Test 3: Post Handler JSON w/o URL",
 			fields: fields{
-				rdb:         *rdb,
+				rdb:         *repoMock,
 				code:        400,
 				postAddress: "{\"url\":\"\"}",
 				response:    "No URL recieved\n",
@@ -252,10 +266,6 @@ func TestHandlersWithDBStore_PostHandlerJSON(t *testing.T) {
 			endpoint := "http://localhost:8080/"
 
 			data := tt.fields.postAddress
-			//outputURL := typeHandlingURL{}
-			// outputURL.CollectedURL, _ = url.Parse(tt.fields.postAddress)
-			// data, _ := json.Marshal(outputURL)
-
 			request, err := http.NewRequest(tt.fields.method, endpoint, bytes.NewBufferString(string(data)))
 			if err != nil {
 				t.Fatal(err)
@@ -281,4 +291,26 @@ func TestHandlersWithDBStore_PostHandlerJSON(t *testing.T) {
 		})
 	}
 
+}
+
+// repository represent the MOCK of repository model
+type repositoryMock struct {
+	mock.Mock
+}
+
+// Set attaches the MOCK repository and set the data
+func (r repositoryMock) Set(ctx context.Context, key string, value interface{}, exp time.Duration) error {
+	args := r.Called(ctx, key, value, exp)
+	return args.Error(0)
+}
+
+// Get attaches the MOCK repository and get the data
+func (r repositoryMock) Get(ctx context.Context, key string) (string, error) {
+	args := r.Called(ctx, key)
+	return args.String(0), args.Error(1)
+}
+
+func (m repositoryMock) Ping(ctx context.Context) error {
+	args := m.Called(ctx)
+	return args.Error(0)
 }

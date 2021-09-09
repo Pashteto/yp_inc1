@@ -9,6 +9,7 @@ import (
 
 	"github.com/Pashteto/yp_inc1/config"
 	"github.com/Pashteto/yp_inc1/handlers"
+	"github.com/Pashteto/yp_inc1/repos"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/mux"
@@ -46,10 +47,11 @@ func main() {
 		Password: "", // no password set
 		DB:       0,  // use default DB
 	})
+	repa := repos.NewRedisRepository(rdb)
 	defer rdb.Close()
 
 	// Passing the DB to the new obj with Handlers as methods
-	sshand := handlers.HandlersWithDBStore{Rdb: *rdb, Conf: &conf}
+	sshand := handlers.HandlersWithDBStore{Rdb: repa, Conf: &conf}
 
 	r := mux.NewRouter()
 	r.HandleFunc("/{key}", sshand.GetHandler).Methods("GET")             //routing get with the {key}
