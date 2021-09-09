@@ -7,10 +7,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/Pashteto/yp_inc1/config"
 	"github.com/go-redis/redis/v8"
 	"github.com/stretchr/testify/assert"
-
-	"github.com/Pashteto/yp_inc1/config"
 )
 
 func TestHandlersWithDBStore_GetHandler(t *testing.T) {
@@ -181,4 +180,105 @@ func TestHandlersWithDBStore_PostHandler(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestHandlersWithDBStore_PostHandlerJSON(t *testing.T) {
+	type fields struct {
+		rdb         redis.Client
+		code        int
+		postAddress string
+		response    string
+		method      string
+		conf        *config.Config
+	}
+	rdb := redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "", // no password set
+		DB:       0,  // use default DB
+	})
+	defer rdb.Close()
+	var conf config.Config
+	err := config.ReadFile(&conf)
+	if err != nil {
+		t.Errorf("Unable to read config file conf.json:\t%v", err)
+		return
+	}
+	tests := []struct {
+		name   string
+		fields fields
+	}{
+		// tests list
+		{
+			name: "Test 1: Post Handler correct response",
+			fields: fields{
+				rdb:         *rdb,
+				code:        201,
+				postAddress: "{\"url\":\"http://example.com\"}",
+				response:    "{\"result\":\"http://localhost:8080/887\"}",
+				method:      "POST",
+				conf:        &conf,
+			},
+		},
+		{
+			name: "Test 2: Post Handler empty JSON",
+			fields: fields{
+				rdb:         *rdb,
+				code:        400,
+				postAddress: "",
+				response:    "unable to unmarshal JSON\n",
+				method:      "POST",
+				conf:        &conf,
+			},
+		},
+		{
+			name: "Test 3: Post Handler JSON w/o URL",
+			fields: fields{
+				rdb:         *rdb,
+				code:        400,
+				postAddress: "{\"url\":\"\"}",
+				response:    "No URL recieved\n",
+				method:      "POST",
+				conf:        &conf,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hObj := &HandlersWithDBStore{
+				Rdb:  tt.fields.rdb,
+				Conf: &conf,
+			}
+
+			endpoint := "http://localhost:8080/"
+
+			data := tt.fields.postAddress
+			//outputURL := typeHandlingURL{}
+			// outputURL.CollectedURL, _ = url.Parse(tt.fields.postAddress)
+			// data, _ := json.Marshal(outputURL)
+
+			request, err := http.NewRequest(tt.fields.method, endpoint, bytes.NewBufferString(string(data)))
+			if err != nil {
+				t.Fatal(err)
+			}
+			w := httptest.NewRecorder()
+			h := http.HandlerFunc(hObj.PostHandlerJSON)
+			h.ServeHTTP(w, request)
+			res := w.Result()
+
+			// test StatusCode
+			assert.Equal(t, tt.fields.code, res.StatusCode,
+				"Expected status code %d, got %d", tt.fields.code, w.Code)
+
+			// reading body
+			defer res.Body.Close()
+			resBody, err := ioutil.ReadAll(res.Body)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if string(resBody) != tt.fields.response {
+				t.Errorf("Expected body %s, got %s", tt.fields.response, w.Body.String())
+			}
+		})
+	}
+
 }

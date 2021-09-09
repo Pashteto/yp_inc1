@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -33,14 +34,12 @@ func main() {
 	}*/
 
 	godotenv.Load()
-	/*	log.Println(os.Getenv("REDIS_HOST"))
-		log.Println(os.Getenv("APP_BASE_HOST"))
-		log.Println(os.Getenv("APP_PORT"))
-		log.Println(os.Getenv("APP_BASE_URL"))*/
+	log.Println(os.Getenv("REDIS_HOST"))
+	log.Println(os.Getenv("APP_BASE_HOST"))
+	log.Println(os.Getenv("APP_PORT"))
+	log.Println(os.Getenv("APP_BASE_URL"))
 	conf.RecieveEnv(os.Getenv("APP_BASE_HOST"), os.Getenv("APP_PORT"), os.Getenv("APP_BASE_URL"))
-	/*if erf != nil {
-		log.Println("Unable to read config file conf.json:\t", erf)
-	}*/
+
 	// initialising redis DB
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     os.Getenv("REDIS_HOST") + ":6379",

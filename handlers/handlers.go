@@ -65,28 +65,29 @@ func (h *HandlersWithDBStore) PostHandler(w http.ResponseWriter, r *http.Request
 		http.Error(w, "Unable to parse URL", http.StatusBadRequest)
 		return
 	}
-	if longURL.Host == "" && longURL.Path == "" {
+	id, err := PostInDBReturnID(&h.Rdb, longURL)
+	if err != nil {
 		http.Error(w, "No URL recieved", http.StatusBadRequest)
 		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	w.Write([]byte(config.String(h.Conf) + "/" + id))
+}
+
+func PostInDBReturnID(client *redis.Client, longURL *url.URL) (string, error) {
+	if longURL.Host == "" && longURL.Path == "" {
+		return "", errors.New("no URL recieved")
 	}
 	if !longURL.IsAbs() {
 		longURL.Scheme = "http"
 	}
-	log.Println(longURL.String())
-
-	w.WriteHeader(http.StatusCreated)
 	id := fmt.Sprint((rand.Intn(1000)))
-	h.Rdb.Set(ctx, id, longURL.String(), 1000*time.Second)
-	shorturl := config.String(h.Conf) + "/" + id
-	w.Write([]byte(shorturl))
+	client.Set(ctx, id, longURL.String(), 1000*time.Second)
+	return id, nil
 }
 
-func PostInDBUtility(client *redis.Client, id string) (string, error) {
-
-	return "", nil
-}
-
-// Post puts the new url in the storage
+// Post puts the new url in the storage with JSON input
 func (h *HandlersWithDBStore) PostHandlerJSON(w http.ResponseWriter, r *http.Request) {
 	errReadDB := h.pingRedisDB(&h.Rdb)
 	if errReadDB != nil {
@@ -100,32 +101,28 @@ func (h *HandlersWithDBStore) PostHandlerJSON(w http.ResponseWriter, r *http.Req
 		http.Error(w, "unable to parse body", http.StatusBadRequest)
 		return
 	}
-	inputURL := typeHandlingURL{} //url.URL{} ///
+	inputURL := typeHandlingURL{}
 	err = json.Unmarshal(body, &inputURL)
-
 	if err != nil {
 		log.Println(err)
 		http.Error(w, "unable to unmarshal JSON", http.StatusBadRequest)
 		return
 	}
-	if inputURL.CollectedURL.Host == "" && inputURL.CollectedURL.Path == "" {
+	id, err := PostInDBReturnID(&h.Rdb, inputURL.CollectedURL)
+	if err != nil {
 		http.Error(w, "No URL recieved", http.StatusBadRequest)
 		return
 	}
-	if !inputURL.CollectedURL.IsAbs() {
-		inputURL.CollectedURL.Scheme = "http"
-	}
-	id := fmt.Sprint((rand.Intn(1000)))
-	h.Rdb.Set(ctx, id, inputURL.CollectedURL.String(), 1000*time.Second)
-	outputURL := shortenResponse{}
-	outputURL.ProducedString = config.String(h.Conf) + "/" + id
-	output2, err2 := json.Marshal(outputURL)
+	outputURL := typeHandlingURL{}
+	outputURL.CollectedURL, _ = url.Parse(config.String(h.Conf) + "/" + id)
+	//	config.String(h.Conf) + "/" + id
+	output, err2 := json.Marshal(outputURL)
 	if err2 != nil {
 		http.Error(w, "unable to marshall short URL", http.StatusServiceUnavailable)
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
-	w.Write(output2)
+	w.Write(output)
 }
 
 func (h *HandlersWithDBStore) EmptyHandler(w http.ResponseWriter, r *http.Request) {
@@ -143,15 +140,11 @@ func (h *HandlersWithDBStore) pingRedisDB(client *redis.Client) error {
 	return nil
 }
 
-type shortenResponse struct {
-	ProducedString string `json:"result"`
-}
-
 type typeHandlingURL struct {
 	CollectedURL *url.URL
 }
 
-func (t *typeHandlingURL) MarshalJSON() ([]byte, error) {
+func (t typeHandlingURL) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&struct {
 		ResultString string `json:"result"`
 	}{
