@@ -26,53 +26,47 @@ jobs:
           --health-retries 5
 
     steps:
-      - name: Install deps
-        run: |
-          apt-get update && apt-get install -y --no-install-recommends lsof
-
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Download shortenertest binary
-        uses: robinraju/release-downloader@v1
+      - name: Download autotests binaries
+        uses: robinraju/release-downloader@v1.2
         with:
           repository: Yandex-Practicum/go-autotests-bin
           latest: true
-          fileName: shortenertest
+          fileName: "*"
           out-file-path: .tools
 
       - name: Setup autotest binary
         run: |
-          chmod -R +x $GITHUB_WORKSPACE/.tools/shortenertest
+          chmod -R +x $GITHUB_WORKSPACE/.tools
           mv $GITHUB_WORKSPACE/.tools/shortenertest /usr/local/bin/shortenertest
+          mv $GITHUB_WORKSPACE/.tools/random /usr/local/bin/random
 
-      - name: Start web server
+      - name: Build server binary
         run: |
-          go run ./cmd/shortener/... &
-          timeout 10 sh -c 'until lsof -i:8080; do sleep 1s; done'
-        env:
-          # The hostname used to communicate with the Redis service container
-          REDIS_HOST: redis
+          cd cmd/shortener
+          go build -o shortener
 
-      - name: "[Code increment #1] Check basic handlers"
+      - name: "Code increment #1"
         if: always()
         run: |
-          shortenertest -test.v -test.run=^TestBasicHandlers$ ./...
+          shortenertest -test.v -test.run=^TestIteration1$ -binary-path=cmd/shortener/shortener
 
-      - name: "[Code increment #2] Check handlers unit tests"
+      - name: "Code increment #2"
         if: always()
         run: |
-          shortenertest -test.v -test.run=^TestHandlersCovered$ ./...
+          shortenertest -test.v -test.run=^TestIteration2$ -source-path=.
 
-      - name: "[Code increment #3] Check HTTP framework usage"
+      - name: "Code increment #3"
         if: always()
         run: |
-          shortenertest -test.v -test.run=^TestUsesHTTPFramework$ ./...
+          shortenertest -test.v -test.run=^TestIteration3$ -source-path=.
 
       - name: "Code increment #4"
         if: always()
         run: |
-          shortenertest -test.v -test.run=^TestIteration4$ -source-path=. -binary-path=cmd/shortener
+          shortenertest -test.v -test.run=^TestIteration4$ -source-path=. -binary-path=cmd/shortener/shortener
 
       - name: "Code increment #5"
         if: always()
