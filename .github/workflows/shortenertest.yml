@@ -59,7 +59,7 @@ jobs:
         if: always()
         run: |
           shortenertest -test.v -test.run=^TestIteration2$ -source-path=.
-      env:
+        env:
           REDIS_HOST: redis
 
       - name: "Code increment #3"
