@@ -48,6 +48,10 @@ jobs:
           cd cmd/shortener
           go build -o shortener
 
+        env:
+          # The hostname used to communicate with the Redis service container
+          REDIS_HOST: redis
+
       - name: "Code increment #1"
         if: always()
         run: |

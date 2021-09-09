@@ -32,7 +32,7 @@ func (h *HandlersWithDBStore) GetHandler(w http.ResponseWriter, r *http.Request)
 	errReadDB := h.pingRedisDB(&h.Rdb)
 	if errReadDB != nil {
 		log.Println(errReadDB)
-		http.Error(w, "DB not resonding", http.StatusInternalServerError)
+		http.Error(w, "DB not resonding Get", http.StatusInternalServerError)
 		return
 	}
 	countID, _ := h.Rdb.Exists(ctx, id).Result()
@@ -51,7 +51,7 @@ func (h *HandlersWithDBStore) PostHandler(w http.ResponseWriter, r *http.Request
 	errReadDB := h.pingRedisDB(&h.Rdb)
 	if errReadDB != nil {
 		log.Println(errReadDB)
-		http.Error(w, "DB not resonding", http.StatusInternalServerError)
+		http.Error(w, "DB not resonding Post", http.StatusInternalServerError)
 		return
 	}
 	body, err := io.ReadAll(r.Body)
@@ -91,7 +91,7 @@ func (h *HandlersWithDBStore) PostHandlerJSON(w http.ResponseWriter, r *http.Req
 	errReadDB := h.pingRedisDB(&h.Rdb)
 	if errReadDB != nil {
 		log.Println(errReadDB)
-		http.Error(w, "DB not resonding", http.StatusInternalServerError)
+		http.Error(w, "DB not resonding Post JSON", http.StatusInternalServerError)
 		return
 	}
 	body, err := io.ReadAll(r.Body)
