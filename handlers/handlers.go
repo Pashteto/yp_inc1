@@ -21,7 +21,7 @@ var ctx, _ = context.WithCancel(context.Background())
 // Storing data in this structure to get rid of global var DB
 // data is stored using Redis DB
 type HandlersWithDBStore struct {
-	Rdb  repos.SetterGetter // redis.Client
+	Rdb  *repos.SetterGetter // redis.Client
 	Conf *config.Config
 }
 
@@ -35,7 +35,7 @@ func (h *HandlersWithDBStore) GetHandler(w http.ResponseWriter, r *http.Request)
 		http.Error(w, "DB not resonding Get", http.StatusInternalServerError)
 		return
 	}
-	longURL, _ := h.Rdb.Get(ctx, id) //.Result()
+	longURL, _ := (*h.Rdb).Get(ctx, id) //.Result()
 	if longURL == "" {
 		w.Header().Set("Content-Type", "text/plain")
 		http.Error(w, fmt.Sprintf("Wrong short URL id: %v", id), http.StatusBadRequest)
@@ -73,7 +73,7 @@ func (h *HandlersWithDBStore) PostHandler(w http.ResponseWriter, r *http.Request
 	w.Write([]byte(config.String(h.Conf) + "/" + id))
 }
 
-func PostInDBReturnID(client repos.SetterGetter, longURL *url.URL) (string, error) {
+func PostInDBReturnID(client *repos.SetterGetter, longURL *url.URL) (string, error) {
 	if longURL.Host == "" && longURL.Path == "" {
 		return "", errors.New("no URL recieved")
 	}
@@ -81,7 +81,7 @@ func PostInDBReturnID(client repos.SetterGetter, longURL *url.URL) (string, erro
 		longURL.Scheme = "http"
 	}
 	id := fmt.Sprint((rand.Intn(1000)))
-	client.Set(ctx, id, longURL.String(), 1000*time.Second)
+	(*client).Set(ctx, id, longURL.String(), 1000*time.Second)
 	return id, nil
 }
 
@@ -128,11 +128,11 @@ func (h *HandlersWithDBStore) EmptyHandler(w http.ResponseWriter, r *http.Reques
 	w.WriteHeader(http.StatusCreated)
 }
 
-func (h *HandlersWithDBStore) pingRedisDB(client repos.SetterGetter) error {
+func (h *HandlersWithDBStore) pingRedisDB(client *repos.SetterGetter) error {
 	if client == nil {
 		return errors.New("no redis db")
 	}
-	err := client.Ping(ctx)
+	err := (*client).Ping(ctx)
 	if err != nil {
 		return err
 	}
