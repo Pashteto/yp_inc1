@@ -17,10 +17,10 @@ type Config struct {
 	ServerAddress string `env:"SERVER_ADDRESS" envDefault:"http://localhost:8080"`
 	//	return cfg.Scheme + "://" + cfg.Host + ":" + cfg.Port
 	// Home         string        `env:"HOME"`
-	// Port1        int           `env:"PORT" envDefault:"3000"`
+	Port1 int `env:"PORT" envDefault:"8080"`
 	// Password     string        `env:"PASSWORD,unset"`
 	// IsProduction bool          `env:"PRODUCTION"`
-	// Hosts        []string      `env:"HOSTS" envSeparator:":"`
+	Hosts []string `env:"HOSTS" envSeparator:":"`
 	// Duration     time.Duration `env:"DURATION"`
 	// TempFolder   string        `env:"TEMP_FOLDER" envDefault:"${HOME}/tmp" envExpand:"true"`
 
@@ -28,8 +28,11 @@ type Config struct {
 }
 
 func (cfg *Config) CheckEnv() {
-	//	os.Setenv("SERVER_HOST", "localhost")
-	//	os.Setenv("SERVER_PORT", "8080")
+
+	if cfg.Port1 != 8080 {
+		cfg.ServerAddress = "http://localhost:" + string(cfg.Port1)
+		return
+	}
 
 	if os.Getenv("SERVER_HOST") != "" && os.Getenv("SERVER_PORT") != "" {
 		cfg.ServerAddress = "http://" + os.Getenv("SERVER_HOST") + ":" + os.Getenv("SERVER_PORT")
