@@ -25,6 +25,11 @@ type Config struct {
 func (cfg *Config) CheckEnv() {
 	if cfg.Host != "" && cfg.Port != "" {
 		cfg.ServerAddress = "http://" + cfg.Host + ":" + cfg.Port
+		return
+	}
+	if cfg.Port != "" {
+		cfg.ServerAddress = "http://localhost:" + cfg.Port
+		return
 	}
 }
 
