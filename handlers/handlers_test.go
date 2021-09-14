@@ -127,8 +127,6 @@ func TestHandlersWithDBStore_PostHandler(t *testing.T) {
 	var conf config.Config
 	err := env.Parse(&conf)
 
-	/*err := config.ReadFile(&conf)
-	 */
 	if err != nil {
 		t.Errorf("Unable to read config file conf.json:\t%v", err)
 		return
@@ -223,8 +221,6 @@ func TestHandlersWithDBStore_PostHandlerJSON(t *testing.T) {
 	var conf config.Config
 	err := env.Parse(&conf)
 
-	/*err := config.ReadFile(&conf)
-	 */
 	if err != nil {
 		t.Errorf("Unable to read config file conf.json:\t%v", err)
 		return

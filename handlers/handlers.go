@@ -70,7 +70,6 @@ func (h *HandlersWithDBStore) PostHandler(w http.ResponseWriter, r *http.Request
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	//	w.Write([]byte(config.String(h.Conf) + "/" + id))
 	w.Write([]byte(h.Conf.BaURL + "/" + id))
 }
 
@@ -114,7 +113,6 @@ func (h *HandlersWithDBStore) PostHandlerJSON(w http.ResponseWriter, r *http.Req
 	}
 	outputURL := typeHandlingURL{}
 	outputURL.CollectedURL, _ = url.Parse(h.Conf.BaURL + "/" + id)
-	//(config.String(h.Conf) + "/" + id)
 	output, err2 := json.Marshal(outputURL)
 	if err2 != nil {
 		http.Error(w, "unable to marshall short URL", http.StatusServiceUnavailable)
