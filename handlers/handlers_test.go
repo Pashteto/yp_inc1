@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/Pashteto/yp_inc1/repos"
+	"github.com/caarlos0/env/v6"
 
 	"github.com/Pashteto/yp_inc1/config"
 	"github.com/stretchr/testify/assert"
@@ -33,12 +34,15 @@ func TestHandlersWithDBStore_GetHandler(t *testing.T) {
 	repoMock.On("Get", mock.MatchedBy(func(_ context.Context) bool { return true }), "this_id_is_a_correct_id").Return("http://example.com", nil)
 
 	var conf config.Config
-	err := config.ReadFile(&conf)
+
+	err := env.Parse(&conf)
+
+	/*err := config.ReadFile(&conf)
+	 */
 	if err != nil {
 		t.Errorf("Unable to read config file conf.json:\t%v", err)
 		return
 	}
-
 	tests := []struct {
 		name   string
 		fields fields
@@ -121,7 +125,10 @@ func TestHandlersWithDBStore_PostHandler(t *testing.T) {
 		mock.MatchedBy(func(_ time.Duration) bool { return true })).Return(nil)
 
 	var conf config.Config
-	err := config.ReadFile(&conf)
+	err := env.Parse(&conf)
+
+	/*err := config.ReadFile(&conf)
+	 */
 	if err != nil {
 		t.Errorf("Unable to read config file conf.json:\t%v", err)
 		return
@@ -214,7 +221,10 @@ func TestHandlersWithDBStore_PostHandlerJSON(t *testing.T) {
 		mock.MatchedBy(func(_ time.Duration) bool { return true })).Return(nil)
 
 	var conf config.Config
-	err := config.ReadFile(&conf)
+	err := env.Parse(&conf)
+
+	/*err := config.ReadFile(&conf)
+	 */
 	if err != nil {
 		t.Errorf("Unable to read config file conf.json:\t%v", err)
 		return

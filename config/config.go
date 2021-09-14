@@ -1,32 +1,26 @@
 package config
 
-import (
-	"encoding/json"
-	"net/url"
-	"os"
-)
+//	"net/url"
 
 type Config struct {
-	Host   string `config:"SERVER_HOST"`
-	Port   string `config:"SERVER_PORT"`
-	Scheme string `config:"SERVER_SCHEME"`
+	// Host   string `config:"SERVER_HOST"`
+	// Port   string `config:"SERVER_PORT"`
+	// Scheme string `config:"SERVER_SCHEME"`
+
+	ServerAddress string `env:"SERVER_ADDRESS" envDefault:"http://localhost:8080"`
+	//	return cfg.Scheme + "://" + cfg.Host + ":" + cfg.Port
+	// Home         string        `env:"HOME"`
+	// Port1        int           `env:"PORT" envDefault:"3000"`
+	// Password     string        `env:"PASSWORD,unset"`
+	// IsProduction bool          `env:"PRODUCTION"`
+	// Hosts        []string      `env:"HOSTS" envSeparator:":"`
+	// Duration     time.Duration `env:"DURATION"`
+	// TempFolder   string        `env:"TEMP_FOLDER" envDefault:"${HOME}/tmp" envExpand:"true"`
+
+	// User string `env:"USER"`
 }
 
-func ReadFile(cfg *Config) error {
-	f, err := os.Open("conf.json")
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	decoder := json.NewDecoder(f)
-	err = decoder.Decode(&cfg)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
+/*
 func (cfg *Config) RecieveEnv(envHost, envPort, envURL string) error {
 	if envHost != "" {
 		cfg.Host = envHost
@@ -49,3 +43,4 @@ func (cfg *Config) RecieveEnv(envHost, envPort, envURL string) error {
 func String(cfg *Config) string {
 	return cfg.Scheme + "://" + cfg.Host + ":" + cfg.Port
 }
+*/
