@@ -14,6 +14,8 @@ import (
 
 	"github.com/Pashteto/yp_inc1/config"
 	"github.com/Pashteto/yp_inc1/repos"
+
+	filedb "github.com/Pashteto/yp_inc1/filed_history"
 )
 
 var ctx, _ = context.WithCancel(context.Background())
@@ -64,13 +66,18 @@ func (h *HandlersWithDBStore) PostHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 	id, err := PostInDBReturnID(h.Rdb, longURL)
+
 	if err != nil {
 		http.Error(w, "No URL recieved", http.StatusBadRequest)
 		return
 	}
+	err = filedb.PostInFileDB(id, longURL, *h.Conf)
+	if err != nil {
+		log.Println("could't write to file", err)
+	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte(h.Conf.BaURL + "/" + id))
+	w.Write([]byte(h.Conf.BaseURL + "/" + id))
 }
 
 func PostInDBReturnID(client *repos.SetterGetter, longURL *url.URL) (string, error) {
@@ -80,7 +87,14 @@ func PostInDBReturnID(client *repos.SetterGetter, longURL *url.URL) (string, err
 	if !longURL.IsAbs() {
 		longURL.Scheme = "http"
 	}
-	id := fmt.Sprint((rand.Intn(1000)))
+	var id string
+	for {
+		id = fmt.Sprint((rand.Intn(1000)))
+		voidUrl, _ := (*client).Get(ctx, id)
+		if voidUrl == "" {
+			break
+		}
+	}
 	(*client).Set(ctx, id, longURL.String(), 1000*time.Second)
 	return id, nil
 }
@@ -112,7 +126,11 @@ func (h *HandlersWithDBStore) PostHandlerJSON(w http.ResponseWriter, r *http.Req
 		return
 	}
 	outputURL := typeHandlingURL{}
-	outputURL.CollectedURL, _ = url.Parse(h.Conf.BaURL + "/" + id)
+	outputURL.CollectedURL, _ = url.Parse(h.Conf.BaseURL + "/" + id)
+	err = filedb.PostInFileDB(id, inputURL.CollectedURL, *h.Conf)
+	if err != nil {
+		log.Println("could't write to file", err)
+	}
 	output, err2 := json.Marshal(outputURL)
 	if err2 != nil {
 		http.Error(w, "unable to marshall short URL", http.StatusServiceUnavailable)

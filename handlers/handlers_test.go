@@ -124,6 +124,10 @@ func TestHandlersWithDBStore_PostHandler(t *testing.T) {
 		mock.MatchedBy(func(_ string) bool { return true }), "",
 		mock.MatchedBy(func(_ time.Duration) bool { return true })).Return(nil)
 
+	repoMock.On("Get",
+		mock.MatchedBy(func(_ context.Context) bool { return true }),
+		mock.MatchedBy(func(_ string) bool { return true })).Return("", nil)
+
 	var conf config.Config
 	err := env.Parse(&conf)
 
@@ -217,6 +221,10 @@ func TestHandlersWithDBStore_PostHandlerJSON(t *testing.T) {
 	repoMock.On("Set", mock.MatchedBy(func(_ context.Context) bool { return true }),
 		mock.MatchedBy(func(_ string) bool { return true }), "",
 		mock.MatchedBy(func(_ time.Duration) bool { return true })).Return(nil)
+
+	repoMock.On("Get",
+		mock.MatchedBy(func(_ context.Context) bool { return true }),
+		mock.MatchedBy(func(_ string) bool { return true })).Return("", nil)
 
 	var conf config.Config
 	err := env.Parse(&conf)

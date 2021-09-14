@@ -1,10 +1,11 @@
 package config
 
 type Config struct {
-	SeAd  string `env:"SERVER_ADDRESS" envDefault:":8080"`
-	BaURL string `env:"BASE_URL" envDefault:"http://localhost:8080"`
+	ServAddr string `env:"SERVER_ADDRESS" envDefault:":8080"`
+	BaseURL  string `env:"BASE_URL" envDefault:"http://localhost:8080"`
 
-	TempFolder string `env:"TEMP_FOLDER" envDefault:"${HOME}/tmp" envExpand:"true"`
+	//	FStorPath string `env:"FILE_STORAGE_PATH" envDefault:"${HOME}/filed_history" envExpand:"true"`
+	FStorPath string `env:"FILE_STORAGE_PATH" envDefault:"${HOME}/go/src/github.com/Pashteto/yp_inc1/filed_history//" envExpand:"true"`
 
 	//	return cfg.Scheme + "://" + cfg.Host + ":" + cfg.Port
 	// Home         string        `env:"HOME"`

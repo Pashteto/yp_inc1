@@ -2,13 +2,13 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 
 	"github.com/Pashteto/yp_inc1/config"
+	filedb "github.com/Pashteto/yp_inc1/filed_history"
 	"github.com/Pashteto/yp_inc1/handlers"
 	"github.com/Pashteto/yp_inc1/repos"
 
@@ -32,7 +32,7 @@ func main() {
 		log.Fatalf("Unable to Parse env:\t%v", err)
 	}
 
-	fmt.Printf("CONF: %+v", conf)
+	//fmt.Printf("CONF: %+v", conf)
 
 	/*	log.Println(os.Getenv("REDIS_HOST"),
 			os.Getenv("APP_BASE_HOST"),
@@ -49,6 +49,12 @@ func main() {
 		DB:       0,  // use default DB
 	})
 	repa := repos.NewRedisRepository(rdb)
+
+	err = filedb.UpdateDB(&repa, conf)
+
+	if err != nil {
+		log.Fatal(err)
+	}
 	defer rdb.Close()
 
 	// Passing the DB to the new obj with Handlers as methods
@@ -63,7 +69,7 @@ func main() {
 
 	// конструируем свой сервер
 	server := &http.Server{
-		Addr: conf.SeAd,
+		Addr: conf.ServAddr,
 	}
 	server.ListenAndServe()
 

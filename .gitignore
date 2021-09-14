@@ -3,3 +3,4 @@
 ._.vscode
 .env
 cmd/shortener/conf.json
+filed_history/URLs.txt
