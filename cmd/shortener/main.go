@@ -20,28 +20,15 @@ import (
 var ctx = context.Background()
 
 func main() {
-	/*
-		fmt.Println(os.Getenv("USER"), "<<== that was username\n",
-			os.ExpandEnv("home env is: ${HOME}\n"),
-			os.ExpandEnv("port env is: ${PORT}\n"),
-			os.ExpandEnv("files env is: ${FILES}\n"))*/
-
 	var conf config.Config
 	err := env.Parse(&conf)
 	if err != nil {
 		log.Fatalf("Unable to Parse env:\t%v", err)
 	}
+	log.Printf("Config:\t%+v", conf)
+	log.Println("REDIS_HOST:\t", os.Getenv("REDIS_HOST"))
+	log.Println("USER:\t", os.Getenv("USER"))
 
-	//fmt.Printf("CONF: %+v", conf)
-
-	/*	log.Println(os.Getenv("REDIS_HOST"),
-			os.Getenv("APP_BASE_HOST"),
-			os.Getenv("APP_PORT"),
-			os.Getenv("APP_BASE_URL"))
-		// conf.RecieveEnv(os.Getenv("APP_BASE_HOST"),
-			// os.Getenv("APP_PORT"),
-			// os.Getenv("APP_BASE_URL"))
-	*/
 	// initialising redis DB
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     os.Getenv("REDIS_HOST") + ":6379",

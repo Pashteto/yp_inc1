@@ -53,7 +53,7 @@ func NewFWriter(fileName string) (*fWriter, error) {
 }
 
 func NewFReader(fileName string) (*fReader, error) {
-	file, err := os.OpenFile(fileName, os.O_RDONLY, 0777)
+	file, err := os.OpenFile(fileName, os.O_RDONLY|os.O_CREATE, 0777)
 	if err != nil {
 		return nil, err
 	}
@@ -83,9 +83,13 @@ func (p *fWriter) Close() error {
 func (c *fReader) Close() error {
 	return c.file.Close()
 }
+func CreateDirFileDBExists(cfg config.Config) error {
+	err := os.MkdirAll(cfg.FStorPath, 0777)
+	return err
+}
 
 func UpdateDB(rdb *repos.SetterGetter, cfg config.Config) error {
-	fileName := cfg.FStorPath + "URLs.txt"
+	fileName := cfg.FStorPath + "/URLs.txt"
 	reader, err := NewFReader(fileName)
 	if err != nil {
 		log.Fatal(err)
@@ -122,7 +126,7 @@ func testFiledURLAndConvert(in *iDShortURL) error {
 }
 
 func PostInFileDB(id string, longURL *url.URL, cfg config.Config) error {
-	fileName := cfg.FStorPath + "URLs.txt"
+	fileName := cfg.FStorPath + "/URLs.txt"
 	writer, err := NewFWriter(fileName)
 	if err != nil {
 		log.Fatal(err)
@@ -134,38 +138,3 @@ func PostInFileDB(id string, longURL *url.URL, cfg config.Config) error {
 	}
 	return nil
 }
-
-/*
-func UpdateDB(rdb *repos.SetterGetter, cfg config.Config) error {
-	fileName := cfg.FStorPath + "URLs.txt"
-	defer os.Remove(fileName)
-
-	producer, err := NewProducer(fileName)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	defer producer.Close()
-
-	fReader, err := NewFReader(fileName)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	defer fReader.Close()
-
-	for _, idShURL := range idShURLs {
-		if err := producer.WriteIDShortURL(idShURL); err != nil {
-			log.Fatal(err)
-		}
-
-		readedIDShortURL, err := fReader.ReadIDShortURL()
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		fmt.Println(readedIDShortURL)
-	}
-	return nil
-}
-*/

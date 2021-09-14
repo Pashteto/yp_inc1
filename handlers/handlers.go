@@ -90,8 +90,8 @@ func PostInDBReturnID(client *repos.SetterGetter, longURL *url.URL) (string, err
 	var id string
 	for {
 		id = fmt.Sprint((rand.Intn(1000)))
-		voidUrl, _ := (*client).Get(ctx, id)
-		if voidUrl == "" {
+		voidURL, _ := (*client).Get(ctx, id)
+		if voidURL == "" {
 			break
 		}
 	}
