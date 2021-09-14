@@ -40,7 +40,8 @@ func main() {
 	//config.ReadFile(&conf)
 
 	//	os.Setenv("SERVER_HOST", "localhost")
-	//	os.Setenv("SERVER_PORT", "8080")
+	//	os.Setenv("PORT", "8080")
+	//	os.Setenv("HOSTS", "localhost")
 
 	err := env.Parse(&conf)
 	conf.CheckEnv()

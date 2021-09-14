@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"log"
 	"os"
 )
@@ -29,8 +30,12 @@ type Config struct {
 
 func (cfg *Config) CheckEnv() {
 
+	if len(cfg.Hosts) > 0 && cfg.Port1 != 0 {
+		cfg.ServerAddress = "http://" + cfg.Hosts[0] + ":" + fmt.Sprint(cfg.Port1)
+		return
+	}
 	if cfg.Port1 != 8080 {
-		cfg.ServerAddress = "http://localhost:" + string(cfg.Port1)
+		cfg.ServerAddress = "http://localhost:" + fmt.Sprint(cfg.Port1)
 		return
 	}
 
