@@ -71,7 +71,7 @@ func (h *HandlersWithDBStore) PostHandler(w http.ResponseWriter, r *http.Request
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	//	w.Write([]byte(config.String(h.Conf) + "/" + id))
-	w.Write([]byte(h.Conf.ServerAddress + "/" + id))
+	w.Write([]byte(h.Conf.BaURL + "/" + id))
 }
 
 func PostInDBReturnID(client *repos.SetterGetter, longURL *url.URL) (string, error) {
@@ -113,7 +113,7 @@ func (h *HandlersWithDBStore) PostHandlerJSON(w http.ResponseWriter, r *http.Req
 		return
 	}
 	outputURL := typeHandlingURL{}
-	outputURL.CollectedURL, _ = url.Parse(h.Conf.ServerAddress + "/" + id)
+	outputURL.CollectedURL, _ = url.Parse(h.Conf.BaURL + "/" + id)
 	//(config.String(h.Conf) + "/" + id)
 	output, err2 := json.Marshal(outputURL)
 	if err2 != nil {

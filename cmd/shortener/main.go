@@ -40,7 +40,7 @@ func main() {
 	//config.ReadFile(&conf)
 
 	//	os.Setenv("SERVER_HOST", "localhost")
-	//	os.Setenv("PORT", "8080")
+	//os.Setenv("PORT", "808214")
 	//	os.Setenv("HOSTS", "localhost")
 
 	err := env.Parse(&conf)
@@ -82,7 +82,7 @@ func main() {
 
 	// конструируем свой сервер
 	server := &http.Server{
-		Addr: ":8080",
+		Addr: conf.SeAd,
 	}
 	server.ListenAndServe()
 
