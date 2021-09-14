@@ -21,6 +21,8 @@ var ctx = context.Background()
 
 func main() {
 	var conf config.Config
+	os.Setenv("FILE_STORAGE_PATH", "filed_history2//")
+
 	err := env.Parse(&conf)
 	if err != nil {
 		log.Fatalf("Unable to Parse env:\t%v", err)
@@ -37,8 +39,11 @@ func main() {
 	})
 	repa := repos.NewRedisRepository(rdb)
 
+	err = filedb.CreateDirFileDBExists(conf)
+	if err != nil {
+		log.Fatal(err)
+	}
 	err = filedb.UpdateDB(&repa, conf)
-
 	if err != nil {
 		log.Fatal(err)
 	}

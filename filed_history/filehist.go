@@ -1,8 +1,11 @@
 package filedb
 
 import (
+	//	"bytes"
 	"context"
-	"encoding/json"
+	"encoding/gob"
+
+	//	"encoding/json"
 	"errors"
 	"log"
 	"net/url"
@@ -16,8 +19,8 @@ import (
 var ctx, _ = context.WithCancel(context.Background())
 
 type iDShortURL struct {
-	ID      string `json:"id"`
-	LongURL string `json:"long_url"`
+	ID      string
+	LongURL string
 }
 
 type FWriter interface {
@@ -32,12 +35,18 @@ type FReader interface {
 
 type fWriter struct {
 	file    *os.File
-	encoder *json.Encoder
+	encoder *gob.Encoder
 }
 
+/*
+   var buffer bytes.Buffer
+   gobEncoder := gob.NewEncoder(&buffer)
+   gobDecoder := gob.NewDecoder(&buffer)
+
+*/
 type fReader struct {
 	file    *os.File
-	decoder *json.Decoder
+	decoder *gob.Decoder
 }
 
 func NewFWriter(fileName string) (*fWriter, error) {
@@ -45,10 +54,9 @@ func NewFWriter(fileName string) (*fWriter, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return &fWriter{
 		file:    file,
-		encoder: json.NewEncoder(file),
+		encoder: gob.NewEncoder(file),
 	}, nil
 }
 
@@ -60,7 +68,7 @@ func NewFReader(fileName string) (*fReader, error) {
 
 	return &fReader{
 		file:    file,
-		decoder: json.NewDecoder(file),
+		decoder: gob.NewDecoder(file),
 	}, nil
 }
 
@@ -84,17 +92,17 @@ func (c *fReader) Close() error {
 	return c.file.Close()
 }
 func CreateDirFileDBExists(cfg config.Config) error {
-	err := os.MkdirAll(cfg.FStorPath, 0777)
-	return err
+	return os.MkdirAll(cfg.FStorPath, 0777)
 }
 
 func UpdateDB(rdb *repos.SetterGetter, cfg config.Config) error {
-	fileName := cfg.FStorPath + "/URLs.txt"
+	fileName := cfg.FStorPath + "/URLs.bin"
 	reader, err := NewFReader(fileName)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer reader.Close()
+
 	for {
 		readIDShortURL, err := reader.ReadIDShortURL()
 		if err != nil {
@@ -126,7 +134,7 @@ func testFiledURLAndConvert(in *iDShortURL) error {
 }
 
 func PostInFileDB(id string, longURL *url.URL, cfg config.Config) error {
-	fileName := cfg.FStorPath + "/URLs.txt"
+	fileName := cfg.FStorPath + "/URLs.bin"
 	writer, err := NewFWriter(fileName)
 	if err != nil {
 		log.Fatal(err)
