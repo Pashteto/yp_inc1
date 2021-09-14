@@ -6,7 +6,9 @@ type Config struct {
 	// Host   string `config:"SERVER_HOST"`
 	// Port   string `config:"SERVER_PORT"`
 	// Scheme string `config:"SERVER_SCHEME"`
-
+	Host string `env:"SERVER_HOST"`
+	Port string `env:"SERVER_PORT"`
+	// Scheme string `config:"SERVER_SCHEME"`
 	ServerAddress string `env:"SERVER_ADDRESS" envDefault:"http://localhost:8080"`
 	//	return cfg.Scheme + "://" + cfg.Host + ":" + cfg.Port
 	// Home         string        `env:"HOME"`
@@ -18,6 +20,12 @@ type Config struct {
 	// TempFolder   string        `env:"TEMP_FOLDER" envDefault:"${HOME}/tmp" envExpand:"true"`
 
 	// User string `env:"USER"`
+}
+
+func (cfg *Config) CheckEnv() {
+	if cfg.Host != "" && cfg.Port != "" {
+		cfg.ServerAddress = "http://" + cfg.Host + ":" + cfg.Port
+	}
 }
 
 /*

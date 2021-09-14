@@ -39,7 +39,11 @@ func main() {
 	var conf config.Config
 	//config.ReadFile(&conf)
 
+	//	os.Setenv("SERVER_HOST", "localhost")
+	//	os.Setenv("SERVER_PORT", "8080")
+
 	err := env.Parse(&conf)
+	conf.CheckEnv()
 	if err != nil {
 		log.Fatalf("Unable to read env:\t%v", err)
 		//	t.Errorf("Unable to read config file conf.json:\t%v", err)
