@@ -1,5 +1,10 @@
 package config
 
+import (
+	"log"
+	"os"
+)
+
 //	"net/url"
 
 type Config struct {
@@ -23,6 +28,18 @@ type Config struct {
 }
 
 func (cfg *Config) CheckEnv() {
+	//	os.Setenv("SERVER_HOST", "localhost")
+	//	os.Setenv("SERVER_PORT", "8080")
+
+	if os.Getenv("SERVER_HOST") != "" && os.Getenv("SERVER_PORT") != "" {
+		cfg.ServerAddress = "http://" + os.Getenv("SERVER_HOST") + ":" + os.Getenv("SERVER_PORT")
+		log.Println("here is\t", cfg.ServerAddress)
+		return
+	}
+	if os.Getenv("SERVER_PORT") != "" {
+		cfg.ServerAddress = "http://localhost:" + os.Getenv("SERVER_PORT")
+		return
+	}
 	if cfg.Host != "" && cfg.Port != "" {
 		cfg.ServerAddress = "http://" + cfg.Host + ":" + cfg.Port
 		return
