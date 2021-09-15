@@ -22,7 +22,7 @@ var ctx = context.Background()
 func main() {
 	var conf config.Config
 
-	ServAddrPtr := flag.String("a", ":8080", "SERVER_ADDRESS")
+	ServAddrPtr := flag.String("a", ":8081", "SERVER_ADDRESS")
 	BaseURLPtr := flag.String("b", "http://localhost:8080", "BASE_URL")
 	FStorPathPtr := flag.String("f", os.Getenv("HOME"), "FILE_STORAGE_PATH")
 	RedisPtr := flag.String("r", os.Getenv("REDIS_HOST"), "REDIS_HOST")
@@ -34,8 +34,12 @@ func main() {
 		log.Fatalf("Unable to Parse env:\t%v", err)
 	}
 	log.Printf("Config:\t%+v", conf)
-	if conf.UpdateByFlags(ServAddrPtr, BaseURLPtr, FStorPathPtr, RedisPtr) {
+
+	if changed, err := conf.UpdateByFlags(ServAddrPtr, BaseURLPtr, FStorPathPtr, RedisPtr); changed || err == nil {
 		log.Printf("Config updated:\t%+v", conf)
+	}
+	if err != nil {
+		log.Printf("BASE_URL error:\t%+v", err)
 	}
 
 	log.Println("REDIS_HOST:\t", os.Getenv("REDIS_HOST"))
