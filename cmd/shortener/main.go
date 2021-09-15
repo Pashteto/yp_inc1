@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"log"
 	"net/http"
 	"os"
@@ -21,13 +22,23 @@ var ctx = context.Background()
 
 func main() {
 	var conf config.Config
-	os.Setenv("FILE_STORAGE_PATH", "filed_history2//")
 
+	ServAddrPtr := flag.String("a", ":8080", "SERVER_ADDRESS")
+	BaseURLPtr := flag.String("b", "http://localhost:8080", "BASE_URL")
+	FStorPathPtr := flag.String("f", os.Getenv("HOME"), "FILE_STORAGE_PATH")
+	RedisPtr := flag.String("r", os.Getenv("REDIS_HOST"), "REDIS_HOST")
+
+	flag.Parse()
+	log.Println("\nFlags input:\nSERVER_ADDRESS,\tBASE_URL,\tFILE_STORAGE_PATH:\n", *ServAddrPtr, ",", *BaseURLPtr, ",", *FStorPathPtr)
 	err := env.Parse(&conf)
 	if err != nil {
 		log.Fatalf("Unable to Parse env:\t%v", err)
 	}
 	log.Printf("Config:\t%+v", conf)
+	if conf.UpdateByFlags(ServAddrPtr, BaseURLPtr, FStorPathPtr, RedisPtr) {
+		log.Printf("Config updated:\t%+v", conf)
+	}
+
 	log.Println("REDIS_HOST:\t", os.Getenv("REDIS_HOST"))
 	log.Println("USER:\t", os.Getenv("USER"))
 
