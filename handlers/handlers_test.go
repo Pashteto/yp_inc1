@@ -113,6 +113,8 @@ func TestHandlersWithDBStore_PostHandler(t *testing.T) {
 	}
 	repoMock := new(repositoryMock)
 	repoMock.On("Ping", mock.MatchedBy(func(_ context.Context) bool { return true })).Return(nil)
+	repoMock.On("ListAllKeys",
+		mock.MatchedBy(func(_ context.Context) bool { return true })).Return([]string{}, nil)
 
 	repoMock.On("Set",
 		mock.MatchedBy(func(_ context.Context) bool { return true }),
@@ -211,6 +213,7 @@ func TestHandlersWithDBStore_PostHandlerJSON(t *testing.T) {
 	}
 	repoMock := new(repositoryMock)
 	repoMock.On("Ping", mock.MatchedBy(func(_ context.Context) bool { return true })).Return(nil)
+	repoMock.On("ListAllKeys", mock.MatchedBy(func(_ context.Context) bool { return true })).Return([]string{}, nil)
 
 	repoMock.On("Set",
 		mock.MatchedBy(func(_ context.Context) bool { return true }),
@@ -327,6 +330,16 @@ func (r *repositoryMock) Get(ctx context.Context, key string) (string, error) {
 }
 
 func (r *repositoryMock) Ping(ctx context.Context) error {
+	args := r.Called(ctx)
+	return args.Error(0)
+}
+func (r *repositoryMock) ListAllKeys(ctx context.Context) ([]string, error) {
+	args := r.Called(ctx)
+	//	var sdfv []string
+	return []string{}, args.Error(1)
+}
+
+func (r *repositoryMock) FlushAllKeys(ctx context.Context) error {
 	args := r.Called(ctx)
 	return args.Error(0)
 }

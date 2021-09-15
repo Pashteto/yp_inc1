@@ -13,9 +13,8 @@ import (
 	"time"
 
 	"github.com/Pashteto/yp_inc1/config"
-	"github.com/Pashteto/yp_inc1/repos"
-
 	filedb "github.com/Pashteto/yp_inc1/filed_history"
+	"github.com/Pashteto/yp_inc1/repos"
 )
 
 var ctx, _ = context.WithCancel(context.Background())
@@ -71,13 +70,14 @@ func (h *HandlersWithDBStore) PostHandler(w http.ResponseWriter, r *http.Request
 		http.Error(w, "No URL recieved", http.StatusBadRequest)
 		return
 	}
-	err = filedb.PostInFileDB(id, longURL, *h.Conf)
+	//	err = filedb.PostInFileDB(id, longURL, *h.Conf)
 	if err != nil {
 		log.Println("could't write to file", err)
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte(h.Conf.BaseURL + "/" + id))
+	filedb.WriteAll(h.Rdb, *h.Conf)
 }
 
 func PostInDBReturnID(client *repos.SetterGetter, longURL *url.URL) (string, error) {
@@ -127,7 +127,7 @@ func (h *HandlersWithDBStore) PostHandlerJSON(w http.ResponseWriter, r *http.Req
 	}
 	outputURL := typeHandlingURL{}
 	outputURL.CollectedURL, _ = url.Parse(h.Conf.BaseURL + "/" + id)
-	err = filedb.PostInFileDB(id, inputURL.CollectedURL, *h.Conf)
+	//	err = filedb.PostInFileDB(id, inputURL.CollectedURL, *h.Conf)
 	if err != nil {
 		log.Println("could't write to file", err)
 	}
@@ -139,6 +139,7 @@ func (h *HandlersWithDBStore) PostHandlerJSON(w http.ResponseWriter, r *http.Req
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	w.Write(output)
+	filedb.WriteAll(h.Rdb, *h.Conf)
 }
 
 func (h *HandlersWithDBStore) EmptyHandler(w http.ResponseWriter, r *http.Request) {

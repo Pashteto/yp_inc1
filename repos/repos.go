@@ -12,6 +12,8 @@ type SetterGetter interface {
 	Set(ctx context.Context, key string, value interface{}, exp time.Duration) error
 	Get(ctx context.Context, key string) (string, error)
 	Ping(ctx context.Context) error
+	ListAllKeys(ctx context.Context) ([]string, error)
+	FlushAllKeys(ctx context.Context) error
 }
 
 // repository represent the repository model
@@ -38,4 +40,15 @@ func (r *repository) Get(ctx context.Context, key string) (string, error) {
 
 func (r *repository) Ping(ctx context.Context) error {
 	return (*r.Client).Ping(ctx).Err()
+}
+
+func (r *repository) ListAllKeys(ctx context.Context) ([]string, error) {
+	//(*r.Client).FlushAll(ctx)
+	return (*r.Client).Keys(ctx, "*").Result()
+
+	//return []string {}, true
+}
+
+func (r *repository) FlushAllKeys(ctx context.Context) error {
+	return (*r.Client).FlushAll(ctx).Err()
 }

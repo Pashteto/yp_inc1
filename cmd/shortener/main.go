@@ -12,7 +12,6 @@ import (
 	filedb "github.com/Pashteto/yp_inc1/filed_history"
 	"github.com/Pashteto/yp_inc1/handlers"
 	"github.com/Pashteto/yp_inc1/repos"
-
 	"github.com/caarlos0/env/v6"
 	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/mux"
@@ -49,18 +48,18 @@ func main() {
 		DB:       0,  // use default DB
 	})
 	repa := repos.NewRedisRepository(rdb)
-
 	err = filedb.CreateDirFileDBExists(conf)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("file exited")
+		log.Fatal(err, repa)
 	}
-	err = filedb.UpdateDB(&repa, conf)
+	//err = filedb.UpdateDB(&repa, conf)
+	err = filedb.UpdateDBSlice(&repa, conf)
+
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer rdb.Close()
-
-	// Passing the DB to the new obj with Handlers as methods
 	sshand := handlers.HandlersWithDBStore{Rdb: &repa, Conf: &conf}
 
 	r := mux.NewRouter()
@@ -76,6 +75,7 @@ func main() {
 	}
 	server.ListenAndServe()
 
+	err = filedb.WriteAll(&repa, conf)
 	// создаём канал для перехвата сигналов OS bbb 	// перенаправляем сигналы OS в этот канал
 	sigint := make(chan os.Signal, 1)
 	signal.Notify(sigint, os.Interrupt)
@@ -83,4 +83,5 @@ func main() {
 	<-sigint
 	// получаем сигнал OS и начинаем процедуру «мягкой остановки»
 	server.Shutdown(ctx)
+
 }
