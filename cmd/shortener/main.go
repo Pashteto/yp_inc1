@@ -57,7 +57,6 @@ func main() {
 		log.Printf("file exited")
 		log.Fatal(err, repa)
 	}
-	//err = filedb.UpdateDB(&repa, conf)
 	err = filedb.UpdateDBSlice(&repa, conf)
 
 	if err != nil {
