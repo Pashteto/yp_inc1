@@ -35,7 +35,8 @@ func main() {
 	}
 	log.Printf("Config:\t%+v", conf)
 
-	if changed, err := conf.UpdateByFlags(ServAddrPtr, BaseURLPtr, FStorPathPtr, RedisPtr); changed || err == nil {
+	changed, err := conf.UpdateByFlags(ServAddrPtr, BaseURLPtr, FStorPathPtr, RedisPtr)
+	if changed {
 		log.Printf("Config updated:\t%+v", conf)
 	}
 	if err != nil {
