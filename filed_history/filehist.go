@@ -5,6 +5,7 @@ import (
 
 	"context"
 	"encoding/gob"
+	"strings"
 
 	//	"encoding/json"
 	"errors"
@@ -159,7 +160,13 @@ func (c *fReaderSlice) Close() error {
 	return c.file.Close()
 }
 func CreateDirFileDBExists(cfg config.Config) error {
-	return os.MkdirAll(cfg.FStorPath, 0777)
+	fjnv := strings.SplitAfter(cfg.FStorPath, "/")
+	if len(fjnv) > 0 {
+		fjnv = fjnv[:len(fjnv)-1]
+		fjnv1 := strings.Join(fjnv, "")
+		return os.MkdirAll(fjnv1, 0777)
+	}
+	return nil
 }
 
 func UpdateDBSlice(rdb *repos.SetterGetter, cfg config.Config) error {

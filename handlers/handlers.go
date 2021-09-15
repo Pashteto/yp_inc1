@@ -70,10 +70,6 @@ func (h *HandlersWithDBStore) PostHandler(w http.ResponseWriter, r *http.Request
 		http.Error(w, "No URL recieved", http.StatusBadRequest)
 		return
 	}
-	//	err = filedb.PostInFileDB(id, longURL, *h.Conf)
-	if err != nil {
-		log.Println("could't write to file", err)
-	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte(h.Conf.BaseURL + "/" + id))
@@ -127,10 +123,6 @@ func (h *HandlersWithDBStore) PostHandlerJSON(w http.ResponseWriter, r *http.Req
 	}
 	outputURL := typeHandlingURL{}
 	outputURL.CollectedURL, _ = url.Parse(h.Conf.BaseURL + "/" + id)
-	//	err = filedb.PostInFileDB(id, inputURL.CollectedURL, *h.Conf)
-	if err != nil {
-		log.Println("could't write to file", err)
-	}
 	output, err2 := json.Marshal(outputURL)
 	if err2 != nil {
 		http.Error(w, "unable to marshall short URL", http.StatusServiceUnavailable)

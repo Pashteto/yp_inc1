@@ -48,7 +48,7 @@ func main() {
 		DB:       0,  // use default DB
 	})
 	repa := repos.NewRedisRepository(rdb)
-	//err = filedb.CreateDirFileDBExists(conf)
+	err = filedb.CreateDirFileDBExists(conf)
 	if err != nil {
 		log.Printf("file exited")
 		log.Fatal(err, repa)
@@ -76,6 +76,9 @@ func main() {
 	server.ListenAndServe()
 
 	err = filedb.WriteAll(&repa, conf)
+	if err != nil {
+		log.Println(err)
+	}
 	// создаём канал для перехвата сигналов OS bbb 	// перенаправляем сигналы OS в этот канал
 	sigint := make(chan os.Signal, 1)
 	signal.Notify(sigint, os.Interrupt)
