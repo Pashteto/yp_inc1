@@ -13,6 +13,7 @@ import (
 	"github.com/caarlos0/env/v6"
 
 	"github.com/Pashteto/yp_inc1/config"
+	filedb "github.com/Pashteto/yp_inc1/filed_history"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -132,11 +133,16 @@ func TestHandlersWithDBStore_PostHandler(t *testing.T) {
 
 	var conf config.Config
 	err := env.Parse(&conf)
-
 	if err != nil {
 		t.Errorf("Unable to read config file conf.json:\t%v", err)
 		return
 	}
+	err = filedb.CreateDirFileDBExists(conf)
+	if err != nil {
+		t.Errorf("Test tmp file creating error:\t%v", err)
+		return
+	}
+
 	tests := []struct {
 		name   string
 		fields fields
@@ -234,6 +240,11 @@ func TestHandlersWithDBStore_PostHandlerJSON(t *testing.T) {
 
 	if err != nil {
 		t.Errorf("Unable to read config file conf.json:\t%v", err)
+		return
+	}
+	err = filedb.CreateDirFileDBExists(conf)
+	if err != nil {
+		t.Errorf("Test tmp file creating error:\t%v", err)
 		return
 	}
 	tests := []struct {
