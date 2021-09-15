@@ -163,7 +163,7 @@ func CreateDirFileDBExists(cfg config.Config) error {
 }
 
 func UpdateDBSlice(rdb *repos.SetterGetter, cfg config.Config) error {
-	fileName := cfg.FStorPath + "/URLs.txt"
+	fileName := cfg.FStorPath //+ "/URLs.txt"
 	reader, err := NewFReaderSlice(fileName)
 	if err != nil {
 		log.Fatal(err)
@@ -214,7 +214,7 @@ func testFiledURLAndConvert(in *iDShortURL) error {
 }
 
 func PostInFileDB(id string, longURL *url.URL, cfg config.Config) error {
-	fileName := cfg.FStorPath + "/URLs.txt"
+	fileName := cfg.FStorPath // + "/URLs.txt"
 	writer, err := NewFWriter(fileName)
 	if err != nil {
 		log.Fatal(err)
@@ -228,7 +228,7 @@ func PostInFileDB(id string, longURL *url.URL, cfg config.Config) error {
 }
 
 func WriteAll(rdb *repos.SetterGetter, cfg config.Config) error {
-	fileName := cfg.FStorPath + "/URLs.txt"
+	fileName := cfg.FStorPath // + "/URLs.txt"
 	writer, err := NewFWriterSlice(fileName)
 	if err != nil {
 		log.Fatal(err)

@@ -48,7 +48,7 @@ func main() {
 		DB:       0,  // use default DB
 	})
 	repa := repos.NewRedisRepository(rdb)
-	err = filedb.CreateDirFileDBExists(conf)
+	//err = filedb.CreateDirFileDBExists(conf)
 	if err != nil {
 		log.Printf("file exited")
 		log.Fatal(err, repa)
