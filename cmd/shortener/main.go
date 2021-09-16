@@ -22,7 +22,7 @@ var ctx = context.Background()
 func main() {
 	var conf config.Config
 
-	ServAddrPtr := flag.String("a", ":8081", "SERVER_ADDRESS")
+	ServAddrPtr := flag.String("a", ":8080", "SERVER_ADDRESS")
 	BaseURLPtr := flag.String("b", "http://localhost:8080", "BASE_URL")
 	FStorPathPtr := flag.String("f", os.Getenv("HOME"), "FILE_STORAGE_PATH")
 	flag.Parse()
