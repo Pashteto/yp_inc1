@@ -33,19 +33,10 @@ func URL(m iDShortURL) string {
 }
 
 type FWriter interface {
-	WriteIDShortURL(idShURL *iDShortURL)
+	WriteIDShortURL(idShURL []iDShortURL) error
 	Close() error
 }
-type FWriterSlice interface {
-	WriteIDShortURL(idShURL []iDShortURL)
-	Close() error
-}
-
 type FReader interface {
-	ReadIDShortURL() (*iDShortURL, error)
-	Close() error
-}
-type FReaderSlice interface {
 	ReadIDShortURL() ([]iDShortURL, error)
 	Close() error
 }
@@ -54,44 +45,18 @@ type fWriter struct {
 	file    *os.File
 	encoder *gob.Encoder
 }
-type fWriterSlice struct {
-	file    *os.File
-	encoder *gob.Encoder
-}
 
-/*
-   var buffer bytes.Buffer
-   gobEncoder := gob.NewEncoder(&buffer)
-   gobDecoder := gob.NewDecoder(&buffer)
-
-*/
 type fReader struct {
 	file    *os.File
 	decoder *gob.Decoder
 }
 
-type fReaderSlice struct {
-	file    *os.File
-	decoder *gob.Decoder
-}
-
 func NewFWriter(fileName string) (*fWriter, error) {
-	file, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0777)
-	if err != nil {
-		return nil, err
-	}
-	return &fWriter{
-		file:    file,
-		encoder: gob.NewEncoder(file),
-	}, nil
-}
-
-func NewFWriterSlice(fileName string) (*fWriterSlice, error) {
 	file, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE, 0777)
 	if err != nil {
 		return nil, err
 	}
-	return &fWriterSlice{
+	return &fWriter{
 		file:    file,
 		encoder: gob.NewEncoder(file),
 	}, nil
@@ -109,39 +74,14 @@ func NewFReader(fileName string) (*fReader, error) {
 	}, nil
 }
 
-func NewFReaderSlice(fileName string) (*fReaderSlice, error) {
-	file, err := os.OpenFile(fileName, os.O_RDONLY|os.O_CREATE, 0777)
-	if err != nil {
-		return nil, err
-	}
-
-	return &fReaderSlice{
-		file:    file,
-		decoder: gob.NewDecoder(file),
-	}, nil
-}
-
 func (p *fWriter) WriteIDShortURL(idShURL *iDShortURL) error {
 	return p.encoder.Encode(idShURL)
 }
 
-func (c *fReader) ReadIDShortURL() (*iDShortURL, error) {
-	idShURL := &iDShortURL{}
-
-	//	c.decoder.DecodeValue()
+func (c *fReader) ReadIDShortURL() ([]iDShortURL, error) {
+	idShURL := []iDShortURL{}
 	if err := c.decoder.Decode(&idShURL); err != nil {
 		return nil, err
-	}
-	return idShURL, nil
-}
-func (c *fReaderSlice) ReadIDShortURL() ([]iDShortURL, error) {
-	var idShURL []iDShortURL
-	if err := c.decoder.Decode(&idShURL); err != nil {
-		if err.Error() == "EOF" {
-			return nil, nil
-		}
-		return nil, err
-
 	}
 	return idShURL, nil
 }
@@ -149,14 +89,8 @@ func (c *fReaderSlice) ReadIDShortURL() ([]iDShortURL, error) {
 func (p *fWriter) Close() error {
 	return p.file.Close()
 }
-func (p *fWriterSlice) Close() error {
-	return p.file.Close()
-}
 
 func (c *fReader) Close() error {
-	return c.file.Close()
-}
-func (c *fReaderSlice) Close() error {
 	return c.file.Close()
 }
 func CreateDirFileDBExists(cfg config.Config) error {
@@ -169,9 +103,9 @@ func CreateDirFileDBExists(cfg config.Config) error {
 	return nil
 }
 
-func UpdateDBSlice(rdb *repos.SetterGetter, cfg config.Config) error {
-	fileName := cfg.FStorPath //+ "/URLs.txt"
-	reader, err := NewFReaderSlice(fileName)
+func UpdateDBSlice(rdb repos.SetterGetter, cfg config.Config) error {
+	fileName := cfg.FStorPath
+	reader, err := NewFReader(fileName)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -179,10 +113,9 @@ func UpdateDBSlice(rdb *repos.SetterGetter, cfg config.Config) error {
 	defer reader.Close()
 	readIDShortURLSlice, err := reader.ReadIDShortURL()
 	if err != nil {
-		//		if err !=
 		return err
 	}
-	err = (*rdb).FlushAllKeys(ctx)
+	err = rdb.FlushAllKeys(ctx)
 	if err != nil {
 		return err
 	}
@@ -194,7 +127,7 @@ func UpdateDBSlice(rdb *repos.SetterGetter, cfg config.Config) error {
 		}
 		key := strIDShortURL.ID
 		value := strIDShortURL.LongURL
-		err = (*rdb).Set(ctx, key, value, 1000*time.Second)
+		err = rdb.Set(ctx, key, value, 1000*time.Second)
 		if err != nil {
 			return err
 		}
@@ -234,22 +167,23 @@ func PostInFileDB(id string, longURL *url.URL, cfg config.Config) error {
 	return nil
 }
 
-func WriteAll(rdb *repos.SetterGetter, cfg config.Config) error {
-	fileName := cfg.FStorPath // + "/URLs.txt"
-	writer, err := NewFWriterSlice(fileName)
+func WriteAll(rdb repos.SetterGetter, cfg config.Config) error {
+	fileName := cfg.FStorPath
+
+	writer, err := NewFWriter(fileName)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer writer.Close()
 
 	var DBWrite []iDShortURL
-	keys, err := (*rdb).ListAllKeys(ctx)
+	keys, err := rdb.ListAllKeys(ctx)
 	if err != nil {
 		return err
 	}
 	for i := range keys {
 		key := keys[i]
-		value, err := (*rdb).Get(ctx, key)
+		value, err := rdb.Get(ctx, key)
 		if err != nil {
 			return err
 		}

@@ -36,10 +36,10 @@ func main() {
 
 	changed, err := conf.UpdateByFlags(ServAddrPtr, BaseURLPtr, FStorPathPtr)
 	if changed {
-		log.Printf("Config updated:\t%+v", conf)
+		log.Printf("Config updated:\t%+v\n", conf)
 	}
 	if err != nil {
-		log.Printf("BASE_URL error:\t%+v", err)
+		log.Printf("Flags input error:\t%v\n", err)
 	}
 
 	log.Println("REDIS_HOST:\t", os.Getenv("REDIS_HOST"))
@@ -57,7 +57,7 @@ func main() {
 		log.Printf("file exited")
 		log.Fatal(err, repa)
 	}
-	err = filedb.UpdateDBSlice(&repa, conf)
+	err = filedb.UpdateDBSlice(repa, conf)
 
 	if err != nil {
 		log.Fatal(err)
@@ -78,10 +78,6 @@ func main() {
 	}
 	server.ListenAndServe()
 
-	err = filedb.WriteAll(&repa, conf)
-	if err != nil {
-		log.Println(err)
-	}
 	// создаём канал для перехвата сигналов OS bbb 	// перенаправляем сигналы OS в этот канал
 	sigint := make(chan os.Signal, 1)
 	signal.Notify(sigint, os.Interrupt)
