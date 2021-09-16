@@ -13,12 +13,11 @@ type Config struct {
 	FStorPath string `env:"FILE_STORAGE_PATH" envDefault:"${HOME}/go/src/github.com/Pashteto/yp_inc1/tmp/URLs" envExpand:"true"`
 }
 
-func (cfg *Config) UpdateByFlags(ServAddr, BaseURL, FStorPath, RedisPtr *string) (changed bool, err error) {
-	changed = false
-	err = nil
+func (cfg *Config) UpdateByFlags(ServAddr, BaseURL, FStorPath *string) (bool, error) {
+	changed := false
 	if *BaseURL != "http://localhost:8080" {
 		changed = true
-		cfg.BaseURL = *ServAddr
+		cfg.BaseURL = *BaseURL
 	}
 	if *ServAddr != ":8080" {
 		changed = true
@@ -34,8 +33,7 @@ func (cfg *Config) UpdateByFlags(ServAddr, BaseURL, FStorPath, RedisPtr *string)
 			base = strings.Join(fjnv[:len(fjnv)-1], "")
 		}
 		if base == "" || port == "" {
-			err = errors.New("SERVER_ADDRESS, BASE_URL flags error")
-			return
+			return changed, errors.New("SERVER_ADDRESS, BASE_URL flags error")
 		}
 		cfg.BaseURL = base + port
 	}
@@ -43,8 +41,5 @@ func (cfg *Config) UpdateByFlags(ServAddr, BaseURL, FStorPath, RedisPtr *string)
 		changed = true
 		cfg.FStorPath = *FStorPath
 	}
-	if *RedisPtr != os.Getenv("REDIS_HOST") {
-		os.Setenv("REDIS_HOST", *RedisPtr)
-	}
-	return
+	return changed, nil
 }
