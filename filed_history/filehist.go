@@ -81,7 +81,9 @@ func (p *fWriter) WriteIDShortURL(idShURL *iDShortURL) error {
 func (c *fReader) ReadIDShortURL() ([]iDShortURL, error) {
 	idShURL := []iDShortURL{}
 	if err := c.decoder.Decode(&idShURL); err != nil {
-		return nil, err
+		if err.Error() != "EOF" {
+			return nil, err
+		}
 	}
 	return idShURL, nil
 }

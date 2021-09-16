@@ -58,7 +58,6 @@ func main() {
 		log.Fatal(err, repa)
 	}
 	err = filedb.UpdateDBSlice(repa, conf)
-
 	if err != nil {
 		log.Fatal(err)
 	}
