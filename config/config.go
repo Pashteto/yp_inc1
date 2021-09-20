@@ -3,9 +3,11 @@ package config
 import "os"
 
 type Config struct {
-	ServAddr  string `env:"SERVER_ADDRESS" envDefault:":8080"`
-	BaseURL   string `env:"BASE_URL" envDefault:"http://localhost:8080"`
-	FStorPath string `env:"FILE_STORAGE_PATH" envDefault:"${HOME}/go/src/github.com/Pashteto/yp_inc1/tmp/URLs" envExpand:"true"`
+	ServAddr string `env:"SERVER_ADDRESS" envDefault:":8080"`
+	BaseURL  string `env:"BASE_URL" envDefault:"http://localhost:8080"`
+
+	//	FStorPath string `env:"FILE_STORAGE_PATH" envDefault:"${HOME}/go/src/github.com/Pashteto/yp_inc1/tmp/URLs" envExpand:"true"`
+	FStorPath string `env:"FILE_STORAGE_PATH" envDefault:"${HOME}/URLs" envExpand:"true"`
 }
 
 func (cfg *Config) UpdateByFlags(ServAddr, BaseURL, FStorPath *string) (bool, error) {
