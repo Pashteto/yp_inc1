@@ -30,12 +30,6 @@ type HandlersWithDBStore struct {
 func (h *HandlersWithDBStore) GetHandler(w http.ResponseWriter, r *http.Request) {
 	id := string(r.URL.Path[1:])
 
-	errReadDB := h.pingRedisDB(*h.Rdb)
-	if errReadDB != nil {
-		log.Println(errReadDB)
-		http.Error(w, "DB not resonding Get", http.StatusInternalServerError)
-		return
-	}
 	longURL, _ := (*h.Rdb).Get(ctx, id) //.Result()
 	if longURL == "" {
 		w.Header().Set("Content-Type", "text/plain")
@@ -47,12 +41,6 @@ func (h *HandlersWithDBStore) GetHandler(w http.ResponseWriter, r *http.Request)
 
 // Post puts the new url in the storage
 func (h *HandlersWithDBStore) PostHandler(w http.ResponseWriter, r *http.Request) {
-	errReadDB := h.pingRedisDB(*h.Rdb)
-	if errReadDB != nil {
-		log.Println(errReadDB)
-		http.Error(w, "DB not resonding Post", http.StatusInternalServerError)
-		return
-	}
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Println(err)
@@ -97,12 +85,7 @@ func PostInDBReturnID(client repos.SetterGetter, longURL *url.URL) (string, erro
 
 // Post puts the new url in the storage with JSON input
 func (h *HandlersWithDBStore) PostHandlerJSON(w http.ResponseWriter, r *http.Request) {
-	errReadDB := h.pingRedisDB(*h.Rdb)
-	if errReadDB != nil {
-		log.Println(errReadDB)
-		http.Error(w, "DB not resonding Post JSON", http.StatusInternalServerError)
-		return
-	}
+
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Println(err)
@@ -125,7 +108,7 @@ func (h *HandlersWithDBStore) PostHandlerJSON(w http.ResponseWriter, r *http.Req
 	outputURL.CollectedURL, _ = url.Parse(h.Conf.BaseURL + "/" + id)
 	output, err2 := json.Marshal(outputURL)
 	if err2 != nil {
-		http.Error(w, "unable to marshall short URL", http.StatusServiceUnavailable)
+		http.Error(w, "unable to marshall short URL", http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -136,17 +119,6 @@ func (h *HandlersWithDBStore) PostHandlerJSON(w http.ResponseWriter, r *http.Req
 
 func (h *HandlersWithDBStore) EmptyHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
-}
-
-func (h *HandlersWithDBStore) pingRedisDB(client repos.SetterGetter) error {
-	if client == nil {
-		return errors.New("no redis db")
-	}
-	err := client.Ping(ctx)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 type typeHandlingURL struct {

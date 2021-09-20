@@ -54,8 +54,7 @@ func main() {
 	repa := repos.NewRedisRepository(rdb)
 	err = filedb.CreateDirFileDBExists(conf)
 	if err != nil {
-		log.Printf("file exited")
-		log.Fatal(err, repa)
+		log.Fatalf("file exited;\nerr:\t%v; repository:\t%v", err, repa)
 	}
 	err = filedb.UpdateDBSlice(repa, conf)
 	if err != nil {

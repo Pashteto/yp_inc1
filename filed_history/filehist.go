@@ -117,6 +117,10 @@ func UpdateDBSlice(rdb repos.SetterGetter, cfg config.Config) error {
 	if err != nil {
 		return err
 	}
+	errReadDB := pingRedisDB(rdb)
+	if errReadDB != nil {
+		return errReadDB
+	}
 	err = rdb.FlushAllKeys(ctx)
 	if err != nil {
 		return err
@@ -195,5 +199,16 @@ func WriteAll(rdb repos.SetterGetter, cfg config.Config) error {
 		return err
 	}
 
+	return nil
+}
+
+func pingRedisDB(client repos.SetterGetter) error {
+	if client == nil {
+		return errors.New("no redis db")
+	}
+	err := client.Ping(ctx)
+	if err != nil {
+		return err
+	}
 	return nil
 }
