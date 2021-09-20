@@ -2,64 +2,149 @@ package handlers
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
+	"log"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"time"
 
-	"github.com/go-redis/redis/v8"
-	"github.com/gorilla/mux"
+	"github.com/Pashteto/yp_inc1/config"
+	filedb "github.com/Pashteto/yp_inc1/filed_history"
+	"github.com/Pashteto/yp_inc1/repos"
 )
 
-var ctx, cancel = context.WithCancel(context.Background())
+var ctx, _ = context.WithCancel(context.Background())
 
-type SpecificHandler struct {
-	Rdb redis.Client
+// Storing data in this structure to get rid of global var DB
+// data is stored using Redis DB
+type HandlersWithDBStore struct {
+	Rdb  *repos.SetterGetter // redis.Client
+	Conf *config.Config
 }
 
-func (h *SpecificHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-}
+// Get Handler provides with initial URLs stored by their ids
+func (h *HandlersWithDBStore) GetHandler(w http.ResponseWriter, r *http.Request) {
+	id := string(r.URL.Path[1:])
 
-func (h *SpecificHandler) GetHandler(w http.ResponseWriter, r *http.Request) {
-
-	id := mux.Vars(r)["key"]
-	//	fmt.Println(maped)
-	booid, _ := h.Rdb.Exists(ctx, id).Result()
-	// fmt.Println("key2", did)
-	if booid > 0 {
-		long_url, _ := h.Rdb.Get(ctx, id).Result()
-		http.Redirect(w, r, long_url, http.StatusTemporaryRedirect)
-	} else {
-		http.NotFound(w, r)
+	longURL, _ := (*h.Rdb).Get(ctx, id) //.Result()
+	if longURL == "" {
+		w.Header().Set("Content-Type", "text/plain")
+		http.Error(w, fmt.Sprintf("Wrong short URL id: %v", id), http.StatusBadRequest)
+		return
 	}
-
+	http.Redirect(w, r, longURL, http.StatusTemporaryRedirect)
 }
 
-/*func (h *SpecificHandler) EmptyGetHandler(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, "Method not allowed", http.StatusBadRequest)
-}
-func (h *SpecificHandler) EmptyPostHandler(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, "Method not allowed", http.StatusBadRequest)
-}*/
-func (h *SpecificHandler) EmptyHandler(w http.ResponseWriter, r *http.Request) {
-	//w.Header().Add("google.com")
-	//	http.Redirect(w, r, "https://google.com", http.StatusTemporaryRedirect)
-	http.Error(w, "Method not allowed", http.StatusBadRequest)
-}
-
-func (h *SpecificHandler) PostHandler(w http.ResponseWriter, r *http.Request) {
-
-	var shorturl string
-	defer r.Body.Close()
-	// читаем поток из тела ответа
-	body, err := ioutil.ReadAll(r.Body)
+// Post puts the new url in the storage
+func (h *HandlersWithDBStore) PostHandler(w http.ResponseWriter, r *http.Request) {
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		fmt.Println(err)
-	} else {
-		id := fmt.Sprint((rand.Intn(1000)))
-		shorturl = "http://localhost/" + id
-		h.Rdb.Set(ctx, id, string(body), 1000*time.Second)
+		log.Println(err)
+		http.Error(w, "unable to parse body", http.StatusBadRequest)
+		return
 	}
-	fmt.Fprintf(w, "%v", shorturl)
+	longURL, err := url.Parse(string(body))
+	if err != nil {
+		http.Error(w, "Unable to parse URL", http.StatusBadRequest)
+		return
+	}
+	id, err := PostInDBReturnID(*h.Rdb, longURL)
+
+	if err != nil {
+		http.Error(w, "No URL recieved", http.StatusBadRequest)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	w.Write([]byte(h.Conf.BaseURL + "/" + id))
+	filedb.WriteAll(*h.Rdb, *h.Conf)
+}
+
+func PostInDBReturnID(client repos.SetterGetter, longURL *url.URL) (string, error) {
+	if longURL.Host == "" && longURL.Path == "" {
+		return "", errors.New("no URL recieved")
+	}
+	if !longURL.IsAbs() {
+		longURL.Scheme = "http"
+	}
+	var id string
+	for {
+		id = fmt.Sprint((rand.Intn(1000)))
+		voidURL, _ := client.Get(ctx, id)
+		if voidURL == "" {
+			break
+		}
+	}
+	client.Set(ctx, id, longURL.String(), 1000*time.Second)
+	return id, nil
+}
+
+// Post puts the new url in the storage with JSON input
+func (h *HandlersWithDBStore) PostHandlerJSON(w http.ResponseWriter, r *http.Request) {
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "unable to parse body", http.StatusBadRequest)
+		return
+	}
+	inputURL := typeHandlingURL{}
+	err = json.Unmarshal(body, &inputURL)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "unable to unmarshal JSON", http.StatusBadRequest)
+		return
+	}
+	id, err := PostInDBReturnID(*h.Rdb, inputURL.CollectedURL)
+	if err != nil {
+		http.Error(w, "No URL recieved", http.StatusBadRequest)
+		return
+	}
+	outputURL := typeHandlingURL{}
+	outputURL.CollectedURL, _ = url.Parse(h.Conf.BaseURL + "/" + id)
+	output, err2 := json.Marshal(outputURL)
+	if err2 != nil {
+		http.Error(w, "unable to marshall short URL", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	w.Write(output)
+	filedb.WriteAll(*h.Rdb, *h.Conf)
+}
+
+func (h *HandlersWithDBStore) EmptyHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusCreated)
+}
+
+type typeHandlingURL struct {
+	CollectedURL *url.URL
+}
+
+func (t typeHandlingURL) MarshalJSON() ([]byte, error) {
+	return json.Marshal(&struct {
+		ResultString string `json:"result"`
+	}{
+		ResultString: t.CollectedURL.String(),
+	})
+}
+
+func (t *typeHandlingURL) UnmarshalJSON(data []byte) error {
+	type typeHandlingURLAlias struct {
+		CollectedString string `json:"url"`
+	}
+	aliasValue := typeHandlingURLAlias{}
+	if err := json.Unmarshal(data, &aliasValue); err != nil {
+		return err
+	}
+	var err error
+	t.CollectedURL, err = url.Parse(aliasValue.CollectedString)
+	if err != nil {
+		return err
+	}
+	return nil
 }
