@@ -22,7 +22,7 @@ var ctx, _ = context.WithCancel(context.Background())
 // Storing data in this structure to get rid of global var DB
 // data is stored using Redis DB
 type HandlersWithDBStore struct {
-	Rdb  *repos.SetterGetter // redis.Client
+	Rdb  repos.SetterGetter // redis.Client
 	Conf *config.Config
 }
 
@@ -30,7 +30,7 @@ type HandlersWithDBStore struct {
 func (h *HandlersWithDBStore) GetHandler(w http.ResponseWriter, r *http.Request) {
 	id := string(r.URL.Path[1:])
 
-	longURL, _ := (*h.Rdb).Get(ctx, id) //.Result()
+	longURL, _ := h.Rdb.Get(ctx, id)
 	if longURL == "" {
 		w.Header().Set("Content-Type", "text/plain")
 		http.Error(w, fmt.Sprintf("Wrong short URL id: %v", id), http.StatusBadRequest)
@@ -52,7 +52,7 @@ func (h *HandlersWithDBStore) PostHandler(w http.ResponseWriter, r *http.Request
 		http.Error(w, "Unable to parse URL", http.StatusBadRequest)
 		return
 	}
-	id, err := PostInDBReturnID(*h.Rdb, longURL)
+	id, err := PostInDBReturnID(h.Rdb, longURL)
 
 	if err != nil {
 		http.Error(w, "No URL recieved", http.StatusBadRequest)
@@ -61,7 +61,7 @@ func (h *HandlersWithDBStore) PostHandler(w http.ResponseWriter, r *http.Request
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte(h.Conf.BaseURL + "/" + id))
-	filedb.WriteAll(*h.Rdb, *h.Conf)
+	filedb.WriteAll(h.Rdb, *h.Conf)
 }
 
 func PostInDBReturnID(client repos.SetterGetter, longURL *url.URL) (string, error) {
@@ -99,7 +99,7 @@ func (h *HandlersWithDBStore) PostHandlerJSON(w http.ResponseWriter, r *http.Req
 		http.Error(w, "unable to unmarshal JSON", http.StatusBadRequest)
 		return
 	}
-	id, err := PostInDBReturnID(*h.Rdb, inputURL.CollectedURL)
+	id, err := PostInDBReturnID(h.Rdb, inputURL.CollectedURL)
 	if err != nil {
 		http.Error(w, "No URL recieved", http.StatusBadRequest)
 		return
@@ -114,7 +114,7 @@ func (h *HandlersWithDBStore) PostHandlerJSON(w http.ResponseWriter, r *http.Req
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	w.Write(output)
-	filedb.WriteAll(*h.Rdb, *h.Conf)
+	filedb.WriteAll(h.Rdb, *h.Conf)
 }
 
 func (h *HandlersWithDBStore) EmptyHandler(w http.ResponseWriter, r *http.Request) {

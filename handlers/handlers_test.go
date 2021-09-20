@@ -78,7 +78,7 @@ func TestHandlersWithDBStore_GetHandler(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 
 			hObj := &HandlersWithDBStore{
-				Rdb:  &tt.fields.rdb,
+				Rdb:  tt.fields.rdb,
 				Conf: &conf,
 			}
 			request := httptest.NewRequest(tt.fields.method, "/"+tt.fields.id, nil)
@@ -174,7 +174,7 @@ func TestHandlersWithDBStore_PostHandler(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			hObj := &HandlersWithDBStore{
-				Rdb:  &tt.fields.rdb,
+				Rdb:  tt.fields.rdb,
 				Conf: &conf,
 			}
 
@@ -289,7 +289,7 @@ func TestHandlersWithDBStore_PostHandlerJSON(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			hObj := &HandlersWithDBStore{
-				Rdb:  &tt.fields.rdb,
+				Rdb:  tt.fields.rdb,
 				Conf: &conf,
 			}
 

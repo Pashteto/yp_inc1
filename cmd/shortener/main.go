@@ -61,7 +61,7 @@ func main() {
 		log.Fatal(err)
 	}
 	defer rdb.Close()
-	sshand := handlers.HandlersWithDBStore{Rdb: &repa, Conf: &conf}
+	sshand := handlers.HandlersWithDBStore{Rdb: repa, Conf: &conf}
 
 	r := mux.NewRouter()
 	r.HandleFunc("/{key}", sshand.GetHandler).Methods("GET")             //routing get with the {key}
