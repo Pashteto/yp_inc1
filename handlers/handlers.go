@@ -148,3 +148,13 @@ func (t *typeHandlingURL) UnmarshalJSON(data []byte) error {
 	}
 	return nil
 }
+
+type gzipWriter struct {
+	http.ResponseWriter
+	Writer io.Writer
+}
+
+func (w gzipWriter) Write(b []byte) (int, error) {
+	// Writer будет отвечать за gzip-сжатие, поэтому пишем в него
+	return w.Writer.Write(b)
+}

@@ -11,6 +11,7 @@ import (
 	"github.com/Pashteto/yp_inc1/config"
 	filedb "github.com/Pashteto/yp_inc1/filed_history"
 	"github.com/Pashteto/yp_inc1/handlers"
+	middlewares "github.com/Pashteto/yp_inc1/mddlwrs"
 	"github.com/Pashteto/yp_inc1/repos"
 	"github.com/caarlos0/env/v6"
 	"github.com/go-redis/redis/v8"
@@ -69,6 +70,8 @@ func main() {
 	r.HandleFunc("/{key}", sshand.GetHandler).Methods("GET")             //routing get with the {key}
 	r.HandleFunc("/api/shorten", sshand.PostHandlerJSON).Methods("POST") //routing post w JSON
 	r.HandleFunc("/", sshand.PostHandler).Methods("POST")                //routing post
+	r.Use(middlewares.GzipMiddlewareRead)
+	r.Use(middlewares.GzipMiddlewareWrite)
 
 	http.Handle("/", r)
 
