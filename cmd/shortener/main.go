@@ -82,8 +82,8 @@ func main() {
 	signal.Notify(sigint, os.Interrupt, syscall.SIGTERM, syscall.SIGINT, syscall.SIGHUP)
 
 	go func() {
-		<-sigint // Blocks here until interrupted
-		log.Print("Termination signal received. Shutdown process initiated\n")
+		sig := <-sigint // Blocks here until interrupted
+		log.Println(sig, "\t<<<===\t signal received. Shutdown process initiated.")
 		server.Shutdown(ctx)
 	}()
 
