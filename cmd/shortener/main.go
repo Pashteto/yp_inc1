@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"syscall"
 
 	"github.com/Pashteto/yp_inc1/config"
 	filedb "github.com/Pashteto/yp_inc1/filed_history"
@@ -24,7 +25,7 @@ func main() {
 
 	ServAddrPtr := flag.String("a", ":8080", "SERVER_ADDRESS")
 	BaseURLPtr := flag.String("b", "http://localhost:8080", "BASE_URL")
-	FStorPathPtr := flag.String("f", os.Getenv("HOME"), "FILE_STORAGE_PATH")
+	FStorPathPtr := flag.String("f", "../URLs", "FILE_STORAGE_PATH")
 	flag.Parse()
 
 	log.Println("Flags input:\nSERVER_ADDRESS,\tBASE_URL,\tFILE_STORAGE_PATH:\t",
@@ -76,14 +77,15 @@ func main() {
 	server := &http.Server{
 		Addr: conf.ServAddr,
 	}
+
+	sigint := make(chan os.Signal)
+	signal.Notify(sigint, os.Interrupt, syscall.SIGTERM, syscall.SIGINT, syscall.SIGHUP)
+
+	go func() {
+		<-sigint // Blocks here until interrupted
+		log.Print("Termination signal received. Shutdown process initiated\n")
+		server.Shutdown(ctx)
+	}()
+
 	server.ListenAndServe()
-
-	// создаём канал для перехвата сигналов OS bbb 	// перенаправляем сигналы OS в этот канал
-	sigint := make(chan os.Signal, 1)
-	signal.Notify(sigint, os.Interrupt)
-	// ожидаем сигнала
-	<-sigint
-	// получаем сигнал OS и начинаем процедуру «мягкой остановки»
-	server.Shutdown(ctx)
-
 }
