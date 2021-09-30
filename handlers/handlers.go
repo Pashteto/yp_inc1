@@ -19,6 +19,8 @@ import (
 
 var ctx, _ = context.WithCancel(context.Background())
 
+const urlTTL = time.Second * 1000
+
 // Storing data in this structure to get rid of global var DB
 // data is stored using Redis DB
 type HandlersWithDBStore struct {
@@ -79,7 +81,7 @@ func PostInDBReturnID(client repos.SetterGetter, longURL *url.URL) (string, erro
 			break
 		}
 	}
-	client.Set(ctx, id, longURL.String(), 1000*time.Second)
+	client.Set(ctx, id, longURL.String(), urlTTL)
 	return id, nil
 }
 

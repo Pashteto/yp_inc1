@@ -10,7 +10,7 @@ import (
 
 func Test_repository_Get(t *testing.T) {
 	type fields struct {
-		Client *redis.Cmdable
+		Client redis.Cmdable
 	}
 	type args struct {
 		ctx context.Context
@@ -44,7 +44,7 @@ func Test_repository_Get(t *testing.T) {
 
 func Test_repository_Set(t *testing.T) {
 	type fields struct {
-		Client *redis.Cmdable
+		Client redis.Cmdable
 	}
 	type args struct {
 		ctx   context.Context

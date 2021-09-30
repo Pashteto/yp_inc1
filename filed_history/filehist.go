@@ -1,17 +1,13 @@
 package filedb
 
 import (
-	//	"bytes"
-
 	"context"
 	"encoding/gob"
-	"strings"
-
-	//	"encoding/json"
 	"errors"
 	"log"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/Pashteto/yp_inc1/config"
@@ -19,6 +15,8 @@ import (
 )
 
 var ctx, _ = context.WithCancel(context.Background())
+
+const urlTTL1 = time.Second * 1000
 
 type iDShortURL struct {
 	ID      string
@@ -133,7 +131,7 @@ func UpdateDBSlice(rdb repos.SetterGetter, cfg config.Config) error {
 		}
 		key := strIDShortURL.ID
 		value := strIDShortURL.LongURL
-		err = rdb.Set(ctx, key, value, 1000*time.Second)
+		err = rdb.Set(ctx, key, value, urlTTL1)
 		if err != nil {
 			return err
 		}
@@ -142,6 +140,9 @@ func UpdateDBSlice(rdb repos.SetterGetter, cfg config.Config) error {
 }
 
 func testFiledURLAndConvert(in *iDShortURL) error {
+	if in == nil {
+		return errors.New("nil filed id")
+	}
 	if in.ID == "" {
 		return errors.New("empty filed id")
 	}
@@ -160,10 +161,10 @@ func testFiledURLAndConvert(in *iDShortURL) error {
 }
 
 func PostInFileDB(id string, longURL *url.URL, cfg config.Config) error {
-	fileName := cfg.FStorPath // + "/URLs.txt"
+	fileName := cfg.FStorPath
 	writer, err := NewFWriter(fileName)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	defer writer.Close()
 	idShURL := &iDShortURL{ID: id, LongURL: longURL.String()}
@@ -178,7 +179,7 @@ func WriteAll(rdb repos.SetterGetter, cfg config.Config) error {
 
 	writer, err := NewFWriter(fileName)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	defer writer.Close()
 
@@ -187,8 +188,7 @@ func WriteAll(rdb repos.SetterGetter, cfg config.Config) error {
 	if err != nil {
 		return err
 	}
-	for i := range keys {
-		key := keys[i]
+	for _, key := range keys {
 		value, err := rdb.Get(ctx, key)
 		if err != nil {
 			return err
