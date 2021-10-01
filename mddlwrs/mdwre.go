@@ -108,10 +108,10 @@ func UserCookieCheckGen(next http.Handler) http.Handler {
 
 func generateRandomString(size int) (string, error) {
 	letters := "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-+!@#%^*"
-	letters_num := len(letters)
+	lettersNum := len(letters)
 	ret := make([]byte, size)
 	for i := 0; i < size; i++ {
-		num, err := rand.Int(rand.Reader, big.NewInt(int64(letters_num)))
+		num, err := rand.Int(rand.Reader, big.NewInt(int64(lettersNum)))
 		if err != nil {
 			return "", err
 		}

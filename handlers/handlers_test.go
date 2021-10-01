@@ -38,8 +38,6 @@ func TestHandlersWithDBStore_GetHandler(t *testing.T) {
 
 	err := env.Parse(&conf)
 
-	/*err := config.ReadFile(&conf)
-	 */
 	if err != nil {
 		t.Errorf("Unable to read config file conf.json:\t%v", err)
 		return
@@ -329,15 +327,15 @@ type repositoryMock struct {
 }
 
 // Set attaches the MOCK repository and set the data
-func (r *repositoryMock) Set(ctx context.Context, key string, value interface{}, exp time.Duration) error {
+func (r *repositoryMock) Set(ctx context.Context, key string, value repos.UserAndString, exp time.Duration) error {
 	args := r.Called(ctx, key, value, exp)
 	return args.Error(0)
 }
 
 // Get attaches the MOCK repository and get the data
-func (r *repositoryMock) Get(ctx context.Context, key string) (string, error) {
+func (r *repositoryMock) Get(ctx context.Context, key string) (repos.UserAndString, error) {
 	args := r.Called(ctx, key)
-	return args.String(0), args.Error(1)
+	return repos.UserAndString{User: args.String(0), Url: args.String(1)}, args.Error(1)
 }
 
 func (r *repositoryMock) Ping(ctx context.Context) error {
@@ -353,4 +351,20 @@ func (r *repositoryMock) ListAllKeys(ctx context.Context) ([]string, error) {
 func (r *repositoryMock) FlushAllKeys(ctx context.Context) error {
 	args := r.Called(ctx)
 	return args.Error(0)
+}
+
+func (r *repositoryMock) SetHash(ctx context.Context, key, UserHash, Url string, exp time.Duration) error {
+	args := r.Called(ctx, key, UserHash, Url, exp)
+	return args.Error(0)
+}
+
+// Get attaches the redis repository and get the data
+func (r *repositoryMock) GetHash(ctx context.Context, key, UserHash string) (string, error) {
+	args := r.Called(ctx, key, UserHash)
+	return args.String(0), args.Error(1)
+}
+
+func (r *repositoryMock) ListAllKeysHashed(ctx context.Context, UserHash string) (map[string]string, error) {
+	args := r.Called(ctx)
+	return make(map[string]string), args.Error(1)
 }

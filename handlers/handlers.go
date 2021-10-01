@@ -121,7 +121,6 @@ func PostInDBReturnID(client repos.SetterGetter, longURL *url.URL, UserId string
 
 // Post puts the new url in the storage with JSON input
 func (h *HandlersWithDBStore) PostHandlerJSON(w http.ResponseWriter, r *http.Request) {
-
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Println(err)
