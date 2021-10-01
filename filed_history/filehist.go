@@ -21,6 +21,7 @@ const urlTTL1 = time.Second * 1000
 type iDShortURL struct {
 	ID      string
 	LongURL string
+	User    string
 }
 
 func ID(m iDShortURL) string {
@@ -28,6 +29,9 @@ func ID(m iDShortURL) string {
 }
 func URL(m iDShortURL) string {
 	return m.LongURL
+}
+func User(m iDShortURL) string {
+	return m.User
 }
 
 type FWriter interface {
@@ -131,7 +135,10 @@ func UpdateDBSlice(rdb repos.SetterGetter, cfg config.Config) error {
 		}
 		key := strIDShortURL.ID
 		value := strIDShortURL.LongURL
-		err = rdb.Set(ctx, key, value, urlTTL1)
+
+		var vv = repos.UserAndString{User: "", Url: value}
+
+		err = rdb.Set(ctx, key, vv, urlTTL1)
 		if err != nil {
 			return err
 		}
@@ -193,7 +200,7 @@ func WriteAll(rdb repos.SetterGetter, cfg config.Config) error {
 		if err != nil {
 			return err
 		}
-		DBWrite = append(DBWrite, iDShortURL{ID: key, LongURL: value})
+		DBWrite = append(DBWrite, iDShortURL{ID: key, LongURL: value.Url, User: value.User})
 	}
 	if err := writer.encoder.Encode(&DBWrite); err != nil {
 		return err

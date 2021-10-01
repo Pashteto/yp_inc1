@@ -2,11 +2,18 @@ package middlewares
 
 import (
 	"compress/gzip"
+	"crypto/rand"
 	"io"
 	"log"
+	"math/big"
 	"net/http"
 	"strings"
+	"time"
 )
+
+const urlTTL = time.Second * 1000
+const sizeOfKey = 15
+const cookieName = "UserID"
 
 type Middleware func(http.Handler) http.Handler
 
@@ -17,31 +24,28 @@ func Сonveyor(h http.Handler, middlewares ...Middleware) http.Handler {
 	return h
 }
 
-// middleware-функция принимает параметром Handler и возвращает тоже Handler.
+// middleware-функция чтения архивированного тела запроса
 func GzipMiddlewareRead(next http.Handler) http.Handler {
-	// собираем Handler приведением типа
+	// возвращаем Handler приведением типа
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		defer r.Body.Close()
 
 		switch r.Header.Get("Content-Encoding") {
 		case "gzip":
-			//			var buf bytes.Buffer
 			reader, err := gzip.NewReader(r.Body)
 			if err != nil {
 				log.Printf("failed decompress data: %v", err)
 			}
 			defer reader.Close()
-			//			io.Copy(&buf, reader) // print html to standard out
-			//			r.Body = ioutil.NopCloser(reader)///&buf)
 			r.Body = reader
-			//			next.ServeHTTP(w, r)
 		default:
 		}
 		next.ServeHTTP(w, r)
 	})
 }
 
+// middleware-функция записи архивированного ответа
 func GzipMiddlewareWrite(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// проверяем, что клиент поддерживает gzip-сжатие
@@ -53,6 +57,8 @@ func GzipMiddlewareWrite(next http.Handler) http.Handler {
 		gz, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
 		if err != nil {
 			io.WriteString(w, err.Error())
+			log.Printf("failed to compress data: %v", err)
+			next.ServeHTTP(w, r)
 			return
 		}
 		defer gz.Close()
@@ -68,35 +74,48 @@ type gzipWriter struct {
 	Writer io.Writer
 }
 
+// Writer будет отвечать за gzip-сжатие, поэтому пишем в него
 func (w gzipWriter) Write(b []byte) (int, error) {
-	// Writer будет отвечать за gzip-сжатие, поэтому пишем в него
 	return w.Writer.Write(b)
 }
 
-/*
-type gzipReader struct {
-	http.Request
-	Reader io.Reader
+// middleware-функция записи архивированного ответа
+func UserCookieCheckGen(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// проверяем, есть ли у запроса куки
+		fi, err := r.Cookie(cookieName)
+		if fi != nil {
+			next.ServeHTTP(w, r)
+			return
+		}
+		if err != nil && err.Error() != "http: named cookie not present" {
+			log.Println("Request's cookie parsing error ocurred.")
+			next.ServeHTTP(w, r)
+			return
+		}
+		expiration := time.Now().Add(urlTTL)
+		UserID, err := generateRandomString(sizeOfKey) // ключ шифрования
+		if err != nil {
+			log.Printf("error generating user ID: %v\n", err)
+			UserID = "abcd"
+		}
+		cookie := http.Cookie{Name: cookieName, Value: UserID, Expires: expiration}
+		http.SetCookie(w, &cookie)
+		r.AddCookie(&cookie)
+		next.ServeHTTP(w, r)
+	})
 }
 
-func (r *gzipReader) Read(b []byte) (int, error) {
-	// Reader будет отвечать за gzip-чтение, поэтому пишем в него
-
-	return r.Reader.Read(b)
-}
-
-func Decompress(data []byte) ([]byte, error) {
-	r, err := gzip.NewReader(bytes.NewReader(data))
-	defer r.Close()
-	if err != nil {
-		r.Close()
-		return nil, fmt.Errorf("failed decompress data: %v", err)
+func generateRandomString(size int) (string, error) {
+	letters := "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-+!@#%^*"
+	letters_num := len(letters)
+	ret := make([]byte, size)
+	for i := 0; i < size; i++ {
+		num, err := rand.Int(rand.Reader, big.NewInt(int64(letters_num)))
+		if err != nil {
+			return "", err
+		}
+		ret[i] = letters[num.Int64()]
 	}
-	var b bytes.Buffer
-	_, err = b.ReadFrom(r)
-	if err != nil {
-		return nil, fmt.Errorf("failed decompress data: %v", err)
-	}
-	return b.Bytes(), nil
+	return string(ret), nil
 }
-*/

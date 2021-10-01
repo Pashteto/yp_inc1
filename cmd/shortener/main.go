@@ -66,11 +66,12 @@ func main() {
 	}
 	defer rdb.Close()
 	sshand := handlers.HandlersWithDBStore{Rdb: repa, Conf: &conf}
-
 	r := mux.NewRouter()
+	r.HandleFunc("/user/urls", sshand.GetAllUrlsHandler).Methods("GET")  //routing get with the {key}
 	r.HandleFunc("/{key}", sshand.GetHandler).Methods("GET")             //routing get with the {key}
 	r.HandleFunc("/api/shorten", sshand.PostHandlerJSON).Methods("POST") //routing post w JSON
 	r.HandleFunc("/", sshand.PostHandler).Methods("POST")                //routing post
+	r.Use(middlewares.UserCookieCheckGen)
 	r.Use(middlewares.GzipMiddlewareRead)
 	r.Use(middlewares.GzipMiddlewareWrite)
 
