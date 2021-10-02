@@ -47,7 +47,7 @@ func (h *HandlersWithDBStore) GetHandler(w http.ResponseWriter, r *http.Request)
 // Get All Urls Handler provides with all URLs stored by the user
 func (h *HandlersWithDBStore) GetAllUrlsHandler(w http.ResponseWriter, r *http.Request) {
 	UserId, _ := r.Cookie(cookieName)
-	fmt.Printf("fi cookies are:\t%v", UserId)
+	//fmt.Printf("fi cookies are:\t%v", UserId)
 	keys, err := h.Rdb.ListAllKeysHashed(ctx, UserId.Value)
 	if err != nil {
 		w.Header().Set("Content-Type", "text/plain")

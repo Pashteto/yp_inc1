@@ -3,6 +3,7 @@ package repos
 import (
 	"context"
 	"encoding/json"
+	"log"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -81,9 +82,20 @@ func (r *repository) SetHash(ctx context.Context, key, UserHash, Url string, exp
 
 // Get attaches the redis repository and get the data
 func (r *repository) GetHash(ctx context.Context, key, UserHash string) (string, error) {
-	//	data, _ := r.Client.HGetAll(ctx, UserHash).Result()
-	//	log.Println(UserHash, "\tin HGET\t", data)
-	return r.Client.HGet(ctx, UserHash, key).Result()
+	data, _ := r.Client.HGetAll(ctx, UserHash).Result()
+	log.Println(UserHash, "\tin r.Client.HGetAll\t", data)
+
+	data1, _ := r.Client.Keys(ctx, "*").Result()
+	log.Println(UserHash, "\tin r.Client.Keys\t", data1)
+	var res string
+	for _, dataa := range data1 {
+		res, _ = r.Client.HGet(ctx, dataa, key).Result()
+		if res != "" {
+			log.Println(UserHash, "\tr.Client.HGet(ctx, dataa, key).Result()\t", res)
+			return res, nil
+		}
+	}
+	return "", nil
 }
 
 func (r *repository) ListAllKeysHashed(ctx context.Context, UserHash string) (map[string]string, error) {
