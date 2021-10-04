@@ -163,7 +163,7 @@ func UpdateDBSlice(rdb repos.SetterGetter, cfg config.Config) ([]string, error) 
 		for _, pair := range pairs {
 			err = testFiledURLAndConvert(&pair)
 			if err != nil {
-				res := delete_empty(newUserList)
+				res := deleteEmpty(newUserList)
 				sort.Strings(res)
 				return res, err
 			}
@@ -171,7 +171,7 @@ func UpdateDBSlice(rdb repos.SetterGetter, cfg config.Config) ([]string, error) 
 			value := pair.LongURL
 			err = rdb.SetValueByKeyAndUser(ctx, key, user, value, urlTTL1)
 			if err != nil {
-				res := delete_empty(newUserList)
+				res := deleteEmpty(newUserList)
 				sort.Strings(res)
 				return res, err
 			}
@@ -259,7 +259,7 @@ func pingRedisDB(client repos.SetterGetter) error {
 	return nil
 }
 
-func delete_empty(s []string) []string {
+func deleteEmpty(s []string) []string {
 	var r []string
 	for _, str := range s {
 		if str != "" {
