@@ -335,7 +335,7 @@ func (r *repositoryMock) Set(ctx context.Context, key string, value repos.UserAn
 // Get attaches the MOCK repository and get the data
 func (r *repositoryMock) Get(ctx context.Context, key string) (repos.UserAndString, error) {
 	args := r.Called(ctx, key)
-	return repos.UserAndString{User: args.String(0), Url: args.String(1)}, args.Error(1)
+	return repos.UserAndString{User: args.String(0), URL: args.String(1)}, args.Error(1)
 }
 
 func (r *repositoryMock) Ping(ctx context.Context) error {

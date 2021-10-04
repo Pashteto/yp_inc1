@@ -17,7 +17,7 @@ type SetterGetter interface {
 	ListAllKeys(ctx context.Context) ([]string, error)
 	FlushAllKeys(ctx context.Context) error
 
-	SetHash(ctx context.Context, key, UserHash, Url string, exp time.Duration) error
+	SetHash(ctx context.Context, key, UserHash, URL string, exp time.Duration) error
 	GetHash(ctx context.Context, key, UserHash string) (string, error)
 	ListAllKeysHashed(ctx context.Context, UserHash string) (map[string]string, error)
 }
@@ -66,11 +66,11 @@ func (r *repository) FlushAllKeys(ctx context.Context) error {
 
 type UserAndString struct {
 	User string
-	Url  string
+	URL  string
 }
 
-func (r *repository) SetHash(ctx context.Context, key, UserHash, Url string, exp time.Duration) error {
-	err := r.Client.HSet(ctx, UserHash, key, Url).Err()
+func (r *repository) SetHash(ctx context.Context, key, UserHash, URL string, exp time.Duration) error {
+	err := r.Client.HSet(ctx, UserHash, key, URL).Err()
 	//	data, _ := r.Client.HGetAll(ctx, UserHash).Result()
 	//	log.Println(UserHash, "\tin HSET\t", data)
 	what := r.Client.Expire(ctx, UserHash, exp).Err()

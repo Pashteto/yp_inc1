@@ -136,7 +136,7 @@ func UpdateDBSlice(rdb repos.SetterGetter, cfg config.Config) error {
 		key := strIDShortURL.ID
 		value := strIDShortURL.LongURL
 
-		var vv = repos.UserAndString{User: "", Url: value}
+		var vv = repos.UserAndString{User: "", URL: value}
 
 		err = rdb.Set(ctx, key, vv, urlTTL1)
 		if err != nil {
@@ -200,7 +200,7 @@ func WriteAll(rdb repos.SetterGetter, cfg config.Config) error {
 		if err != nil {
 			return err
 		}
-		DBWrite = append(DBWrite, iDShortURL{ID: key, LongURL: value.Url, User: value.User})
+		DBWrite = append(DBWrite, iDShortURL{ID: key, LongURL: value.URL, User: value.User})
 	}
 	if err := writer.encoder.Encode(&DBWrite); err != nil {
 		return err

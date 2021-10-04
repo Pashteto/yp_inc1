@@ -33,8 +33,8 @@ type HandlersWithDBStore struct {
 func (h *HandlersWithDBStore) GetHandler(w http.ResponseWriter, r *http.Request) {
 	id := string(r.URL.Path[1:])
 	//	longURL, _ := h.Rdb.Get(ctx, id)
-	UserId, _ := r.Cookie(cookieName)
-	longURL1, _ := h.Rdb.GetHash(ctx, id, UserId.Value)
+	UserID, _ := r.Cookie(cookieName)
+	longURL1, _ := h.Rdb.GetHash(ctx, id, UserID.Value)
 	//fmt.Println(longURL1, what)
 	if longURL1 == "" {
 		w.Header().Set("Content-Type", "text/plain")
@@ -46,22 +46,22 @@ func (h *HandlersWithDBStore) GetHandler(w http.ResponseWriter, r *http.Request)
 
 // Get All Urls Handler provides with all URLs stored by the user
 func (h *HandlersWithDBStore) GetAllUrlsHandler(w http.ResponseWriter, r *http.Request) {
-	UserId, _ := r.Cookie(cookieName)
-	//fmt.Printf("fi cookies are:\t%v", UserId)
-	keys, err := h.Rdb.ListAllKeysHashed(ctx, UserId.Value)
+	UserID, _ := r.Cookie(cookieName)
+	//fmt.Printf("fi cookies are:\t%v", UserID)
+	keys, err := h.Rdb.ListAllKeysHashed(ctx, UserID.Value)
 	if err != nil {
 		w.Header().Set("Content-Type", "text/plain")
 		http.Error(w, fmt.Sprintf("error receiving all key-value pairs from redis db: %v", err), http.StatusBadRequest)
 		return
 	}
 	rf := len(keys)
-	sliceIdURL := make([]iDShortURLReflex, rf)
+	sliceIDURL := make([]iDShortURLReflex, rf)
 	i := 0
 	for key, val := range keys {
-		sliceIdURL[i] = iDShortURLReflex{ID: h.Conf.BaseURL + "/" + key, LongURL: val}
+		sliceIDURL[i] = iDShortURLReflex{ID: h.Conf.BaseURL + "/" + key, LongURL: val}
 		i++
 	}
-	output, err2 := json.MarshalIndent(sliceIdURL, "", "    ")
+	output, err2 := json.MarshalIndent(sliceIDURL, "", "    ")
 	if err2 != nil {
 		http.Error(w, "unable to marshall all the short urls list", http.StatusInternalServerError)
 		return
@@ -84,8 +84,8 @@ func (h *HandlersWithDBStore) PostHandler(w http.ResponseWriter, r *http.Request
 		http.Error(w, "Unable to parse URL", http.StatusBadRequest)
 		return
 	}
-	UserId, _ := r.Cookie(cookieName)
-	id, err := PostInDBReturnID(h.Rdb, longURL, UserId.Value)
+	UserID, _ := r.Cookie(cookieName)
+	id, err := PostInDBReturnID(h.Rdb, longURL, UserID.Value)
 
 	if err != nil {
 		http.Error(w, "No URL recieved", http.StatusBadRequest)
@@ -97,7 +97,7 @@ func (h *HandlersWithDBStore) PostHandler(w http.ResponseWriter, r *http.Request
 	filedb.WriteAll(h.Rdb, *h.Conf)
 }
 
-func PostInDBReturnID(client repos.SetterGetter, longURL *url.URL, UserId string) (string, error) {
+func PostInDBReturnID(client repos.SetterGetter, longURL *url.URL, UserID string) (string, error) {
 	if longURL.Host == "" && longURL.Path == "" {
 		return "", errors.New("no URL recieved")
 	}
@@ -107,12 +107,12 @@ func PostInDBReturnID(client repos.SetterGetter, longURL *url.URL, UserId string
 	var id string
 	for {
 		id = fmt.Sprint((rand.Intn(1000)))
-		voidURL2, _ := client.GetHash(ctx, id, UserId)
+		voidURL2, _ := client.GetHash(ctx, id, UserID)
 		if voidURL2 == "" {
 			break
 		}
 	}
-	err2 := client.SetHash(ctx, id, UserId, longURL.String(), urlTTL)
+	err2 := client.SetHash(ctx, id, UserID, longURL.String(), urlTTL)
 	if err2 != nil {
 		return id, err2
 	}
@@ -134,8 +134,8 @@ func (h *HandlersWithDBStore) PostHandlerJSON(w http.ResponseWriter, r *http.Req
 		http.Error(w, "unable to unmarshal JSON", http.StatusBadRequest)
 		return
 	}
-	UserId, _ := r.Cookie(cookieName)
-	id, err := PostInDBReturnID(h.Rdb, inputURL.CollectedURL, UserId.Value)
+	UserID, _ := r.Cookie(cookieName)
+	id, err := PostInDBReturnID(h.Rdb, inputURL.CollectedURL, UserID.Value)
 	if err != nil {
 		http.Error(w, "No URL recieved", http.StatusBadRequest)
 		return
