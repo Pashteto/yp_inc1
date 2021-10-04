@@ -353,8 +353,8 @@ func (r *repositoryMock) FlushAllKeys(ctx context.Context) error {
 	return args.Error(0)
 }
 
-func (r *repositoryMock) SetHash(ctx context.Context, key, UserHash, Url string, exp time.Duration) error {
-	args := r.Called(ctx, key, UserHash, Url, exp)
+func (r *repositoryMock) SetHash(ctx context.Context, key, UserHash, URL string, exp time.Duration) error {
+	args := r.Called(ctx, key, UserHash, URL, exp)
 	return args.Error(0)
 }
 
