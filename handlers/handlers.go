@@ -56,6 +56,11 @@ func (h *HandlersWithDBStore) GetAllUrlsHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 	rf := len(keys)
+	if rf == 0 {
+		w.Header().Set("Content-Type", "text/plain")
+		http.Error(w, fmt.Sprintf("no URLs"), http.StatusNoContent)
+		return
+	}
 	sliceIDURL := make([]iDShortURLReflex, rf)
 	i := 0
 	for key, val := range keys {
