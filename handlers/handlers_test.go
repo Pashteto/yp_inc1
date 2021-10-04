@@ -31,8 +31,16 @@ func TestHandlersWithDBStore_GetHandler(t *testing.T) {
 	}
 	repoMock := new(repositoryMock)
 	repoMock.On("Ping", mock.MatchedBy(func(_ context.Context) bool { return true })).Return(nil)
-	repoMock.On("Get", mock.MatchedBy(func(_ context.Context) bool { return true }), "this_id_is_a_wrong_id").Return("", nil)
-	repoMock.On("Get", mock.MatchedBy(func(_ context.Context) bool { return true }), "this_id_is_a_correct_id").Return("http://example.com", nil)
+	//repoMock.On("Get", mock.MatchedBy(func(_ context.Context) bool { return true }), "this_id_is_a_wrong_id").Return("", nil)
+	//repoMock.On("Get", mock.MatchedBy(func(_ context.Context) bool { return true }), "this_id_is_a_correct_id").Return("http://example.com", nil)
+
+	repoMock.On("GetHash", mock.MatchedBy(func(_ context.Context) bool { return true }),
+		"this_id_is_a_wrong_id",
+		func(_ string) bool { return true }).Return("", nil)
+
+	repoMock.On("Get", mock.MatchedBy(func(_ context.Context) bool { return true }),
+		"this_id_is_a_correct_id",
+		func(_ string) bool { return true }).Return("", nil)
 
 	var conf config.Config
 
@@ -333,10 +341,6 @@ func (r *repositoryMock) Set(ctx context.Context, key string, value repos.UserAn
 }
 
 // Get attaches the MOCK repository and get the data
-func (r *repositoryMock) Get(ctx context.Context, key string) (repos.UserAndString, error) {
-	args := r.Called(ctx, key)
-	return repos.UserAndString{User: args.String(0), URL: args.String(1)}, args.Error(1)
-}
 
 func (r *repositoryMock) Ping(ctx context.Context) error {
 	args := r.Called(ctx)
@@ -350,11 +354,6 @@ func (r *repositoryMock) ListAllKeys(ctx context.Context) ([]string, error) {
 
 func (r *repositoryMock) FlushAllKeys(ctx context.Context) error {
 	args := r.Called(ctx)
-	return args.Error(0)
-}
-
-func (r *repositoryMock) SetHash(ctx context.Context, key, UserHash, URL string, exp time.Duration) error {
-	args := r.Called(ctx, key, UserHash, URL, exp)
 	return args.Error(0)
 }
 

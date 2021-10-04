@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/url"
 	"os"
+	"sort"
 	"strings"
 	"time"
 
@@ -18,28 +19,30 @@ var ctx, _ = context.WithCancel(context.Background())
 
 const urlTTL1 = time.Second * 1000
 
-type iDShortURL struct {
+type iDLongURLPair struct {
 	ID      string
 	LongURL string
-	User    string
 }
 
-func ID(m iDShortURL) string {
-	return m.ID
-}
-func URL(m iDShortURL) string {
+func URL(m iDLongURLPair) string {
 	return m.LongURL
 }
-func User(m iDShortURL) string {
+
+type userAndPairs struct {
+	User       string
+	PairsSlice []iDLongURLPair
+}
+
+func User(m userAndPairs) string {
 	return m.User
 }
 
 type FWriter interface {
-	WriteIDShortURL(idShURL []iDShortURL) error
+	WriteUserAndPairs(userPairs []userAndPairs) error
 	Close() error
 }
 type FReader interface {
-	ReadIDShortURL() ([]iDShortURL, error)
+	ReadUserAndPairs() ([]userAndPairs, error)
 	Close() error
 }
 
@@ -69,25 +72,24 @@ func NewFReader(fileName string) (*fReader, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return &fReader{
 		file:    file,
 		decoder: gob.NewDecoder(file),
 	}, nil
 }
 
-func (p *fWriter) WriteIDShortURL(idShURL *iDShortURL) error {
-	return p.encoder.Encode(idShURL)
+func (p *fWriter) WriteUserAndPairs(userPairs *userAndPairs) error {
+	return p.encoder.Encode(userPairs)
 }
 
-func (c *fReader) ReadIDShortURL() ([]iDShortURL, error) {
-	idShURL := []iDShortURL{}
-	if err := c.decoder.Decode(&idShURL); err != nil {
+func (c *fReader) ReadUserAndPairs() ([]userAndPairs, error) {
+	userPairs := []userAndPairs{}
+	if err := c.decoder.Decode(&userPairs); err != nil {
 		if err.Error() != "EOF" {
 			return nil, err
 		}
 	}
-	return idShURL, nil
+	return userPairs, nil
 }
 
 func (p *fWriter) Close() error {
@@ -107,7 +109,31 @@ func CreateDirFileDBExists(cfg config.Config) error {
 	return nil
 }
 
-func UpdateDBSlice(rdb repos.SetterGetter, cfg config.Config) error {
+////
+/*
+// Set attaches the redis repository and set the data
+func (r *repository) Set(ctx context.Context, key string, value UserAndString, exp time.Duration) error {
+	p, err := json.Marshal(value)
+	if err != nil {
+		return err
+	}
+	return r.Client.Set(ctx, key, p, exp).Err()
+}
+
+// Get attaches the redis repository and get the data
+func (r *repository) Get(ctx context.Context, key string) (UserAndString, error) {
+	var res UserAndString
+	p, err := r.Client.Get(ctx, key).Result()
+	if err != nil {
+		return UserAndString{"", ""}, err
+	}
+	err = json.Unmarshal([]byte(p), &res)
+	return res, err
+}
+*/
+///
+
+func UpdateDBSlice(rdb repos.SetterGetter, cfg config.Config) ([]string, error) {
 	fileName := cfg.FStorPath
 	reader, err := NewFReader(fileName)
 	if err != nil {
@@ -115,38 +141,47 @@ func UpdateDBSlice(rdb repos.SetterGetter, cfg config.Config) error {
 	}
 
 	defer reader.Close()
-	readIDShortURLSlice, err := reader.ReadIDShortURL()
+	readUserPairsSlice, err := reader.ReadUserAndPairs()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	errReadDB := pingRedisDB(rdb)
 	if errReadDB != nil {
-		return errReadDB
+		return nil, errReadDB
 	}
 	err = rdb.FlushAllKeys(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	for i := range readIDShortURLSlice {
-		strIDShortURL := readIDShortURLSlice[i]
-		err = testFiledURLAndConvert(&strIDShortURL)
-		if err != nil {
-			return err
-		}
-		key := strIDShortURL.ID
-		value := strIDShortURL.LongURL
-
-		var vv = repos.UserAndString{User: "", URL: value}
-
-		err = rdb.Set(ctx, key, vv, urlTTL1)
-		if err != nil {
-			return err
+	newUserList := make([]string, len(readUserPairsSlice))
+	i := 0
+	for _, userPairsSlice := range readUserPairsSlice {
+		pairs := userPairsSlice.PairsSlice
+		user := userPairsSlice.User
+		newUserList[i] = user
+		i++
+		for _, pair := range pairs {
+			err = testFiledURLAndConvert(&pair)
+			if err != nil {
+				res := delete_empty(newUserList)
+				sort.Strings(res)
+				return res, err
+			}
+			key := pair.ID
+			value := pair.LongURL
+			err = rdb.SetValueByKeyAndUser(ctx, key, user, value, urlTTL1)
+			if err != nil {
+				res := delete_empty(newUserList)
+				sort.Strings(res)
+				return res, err
+			}
 		}
 	}
-	return nil
+	sort.Strings(newUserList)
+	return newUserList, nil
 }
 
-func testFiledURLAndConvert(in *iDShortURL) error {
+func testFiledURLAndConvert(in *iDLongURLPair) error {
 	if in == nil {
 		return errors.New("nil filed id")
 	}
@@ -174,14 +209,14 @@ func PostInFileDB(id string, longURL *url.URL, cfg config.Config) error {
 		return err
 	}
 	defer writer.Close()
-	idShURL := &iDShortURL{ID: id, LongURL: longURL.String()}
+	idShURL := &iDLongURLPair{ID: id, LongURL: longURL.String()}
 	if err := writer.encoder.Encode(&idShURL); err != nil {
 		return err
 	}
 	return nil
 }
 
-func WriteAll(rdb repos.SetterGetter, cfg config.Config) error {
+func WriteAll(rdb repos.SetterGetter, cfg config.Config, UsersList *[]string) error {
 	fileName := cfg.FStorPath
 
 	writer, err := NewFWriter(fileName)
@@ -190,17 +225,21 @@ func WriteAll(rdb repos.SetterGetter, cfg config.Config) error {
 	}
 	defer writer.Close()
 
-	var DBWrite []iDShortURL
-	keys, err := rdb.ListAllKeys(ctx)
-	if err != nil {
-		return err
-	}
-	for _, key := range keys {
-		value, err := rdb.Get(ctx, key)
+	var DBWrite []userAndPairs
+
+	for _, user := range *UsersList {
+		pairsFromDB, err := rdb.ListAllKeysByUser(ctx, user)
 		if err != nil {
 			return err
 		}
-		DBWrite = append(DBWrite, iDShortURL{ID: key, LongURL: value.URL, User: value.User})
+		pairs := make([]iDLongURLPair, len(pairsFromDB))
+		i := 0
+		for key, value := range pairsFromDB {
+			pairs[i] = iDLongURLPair{ID: key, LongURL: value}
+			i++
+		}
+
+		DBWrite = append(DBWrite, userAndPairs{User: user, PairsSlice: pairs})
 	}
 	if err := writer.encoder.Encode(&DBWrite); err != nil {
 		return err
@@ -218,4 +257,14 @@ func pingRedisDB(client repos.SetterGetter) error {
 		return err
 	}
 	return nil
+}
+
+func delete_empty(s []string) []string {
+	var r []string
+	for _, str := range s {
+		if str != "" {
+			r = append(r, str)
+		}
+	}
+	return r
 }

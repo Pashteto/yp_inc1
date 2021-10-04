@@ -60,12 +60,13 @@ func main() {
 	if err != nil {
 		log.Fatalf("file exited;\nerr:\t%v; repository:\t%v", err, repa)
 	}
-	err = filedb.UpdateDBSlice(repa, conf)
+
+	UserList, err := filedb.UpdateDBSlice(repa, conf)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer rdb.Close()
-	sshand := handlers.HandlersWithDBStore{Rdb: repa, Conf: &conf}
+	sshand := handlers.HandlersWithDBStore{Rdb: repa, Conf: &conf, UsersInDB: UserList}
 	r := mux.NewRouter()
 	r.HandleFunc("/user/urls", sshand.GetAllUrlsHandler).Methods("GET")  //routing get with the {key}
 	r.HandleFunc("/{key}", sshand.GetHandler).Methods("GET")             //routing get with the {key}
@@ -88,6 +89,7 @@ func main() {
 		sig := <-sigint // Blocks here until interrupted
 		log.Println(sig, "\t<<<===\t signal received. Shutdown process initiated.")
 		server.Shutdown(ctx)
+		filedb.WriteAll(sshand.Rdb, *sshand.Conf, &sshand.UsersInDB)
 	}()
 	server.ListenAndServe()
 }

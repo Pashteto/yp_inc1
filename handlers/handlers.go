@@ -10,6 +10,7 @@ import (
 	"math/rand"
 	"net/http"
 	"net/url"
+	"sort"
 	"time"
 
 	"github.com/Pashteto/yp_inc1/config"
@@ -25,17 +26,17 @@ const cookieName = "UserID"
 // Storing data in this structure to get rid of global var DB
 // data is stored using Redis DB
 type HandlersWithDBStore struct {
-	Rdb  repos.SetterGetter // redis.Client
-	Conf *config.Config
+	Rdb       repos.SetterGetter // redis.Client
+	Conf      *config.Config
+	UsersInDB []string
 }
 
 // Get Handler provides with initial URLs stored by their ids
 func (h *HandlersWithDBStore) GetHandler(w http.ResponseWriter, r *http.Request) {
 	id := string(r.URL.Path[1:])
-	//	longURL, _ := h.Rdb.Get(ctx, id)
+	//	Checked r.cookie in middleware. It should be there
 	UserID, _ := r.Cookie(cookieName)
-	longURL1, _ := h.Rdb.GetHash(ctx, id, UserID.Value)
-	//fmt.Println(longURL1, what)
+	longURL1, _ := h.Rdb.GetValueByKey(ctx, id, UserID.Value, &h.UsersInDB)
 	if longURL1 == "" {
 		w.Header().Set("Content-Type", "text/plain")
 		http.Error(w, fmt.Sprintf("Wrong short URL id: %v", id), http.StatusBadRequest)
@@ -44,11 +45,11 @@ func (h *HandlersWithDBStore) GetHandler(w http.ResponseWriter, r *http.Request)
 	http.Redirect(w, r, longURL1, http.StatusTemporaryRedirect)
 }
 
-// Get All Urls Handler provides with all URLs stored by the user
+// Get All Urls Handler provides with all URLs stored by single user
 func (h *HandlersWithDBStore) GetAllUrlsHandler(w http.ResponseWriter, r *http.Request) {
 	UserID, _ := r.Cookie(cookieName)
 	//fmt.Printf("fi cookies are:\t%v", UserID)
-	keys, err := h.Rdb.ListAllKeysHashed(ctx, UserID.Value)
+	keys, err := h.Rdb.ListAllKeysByUser(ctx, UserID.Value)
 	if err != nil {
 		w.Header().Set("Content-Type", "text/plain")
 		http.Error(w, fmt.Sprintf("error receiving all key-value pairs from redis db: %v", err), http.StatusBadRequest)
@@ -85,7 +86,7 @@ func (h *HandlersWithDBStore) PostHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 	UserID, _ := r.Cookie(cookieName)
-	id, err := PostInDBReturnID(h.Rdb, longURL, UserID.Value)
+	id, err := h.PostInDBReturnID(longURL, UserID.Value)
 
 	if err != nil {
 		http.Error(w, "No URL recieved", http.StatusBadRequest)
@@ -94,10 +95,10 @@ func (h *HandlersWithDBStore) PostHandler(w http.ResponseWriter, r *http.Request
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte(h.Conf.BaseURL + "/" + id))
-	filedb.WriteAll(h.Rdb, *h.Conf)
+	filedb.WriteAll(h.Rdb, *h.Conf, &h.UsersInDB)
 }
 
-func PostInDBReturnID(client repos.SetterGetter, longURL *url.URL, UserID string) (string, error) {
+func (h *HandlersWithDBStore) PostInDBReturnID(longURL *url.URL, UserID string) (string, error) {
 	if longURL.Host == "" && longURL.Path == "" {
 		return "", errors.New("no URL recieved")
 	}
@@ -107,14 +108,18 @@ func PostInDBReturnID(client repos.SetterGetter, longURL *url.URL, UserID string
 	var id string
 	for {
 		id = fmt.Sprint((rand.Intn(1000)))
-		voidURL2, _ := client.GetHash(ctx, id, UserID)
+		voidURL2, _ := h.Rdb.GetValueByKey(ctx, id, UserID, &h.UsersInDB)
 		if voidURL2 == "" {
 			break
 		}
 	}
-	err2 := client.SetHash(ctx, id, UserID, longURL.String(), urlTTL)
+	err2 := h.Rdb.SetValueByKeyAndUser(ctx, id, UserID, longURL.String(), urlTTL)
 	if err2 != nil {
 		return id, err2
+	}
+	if !repos.Contains(&h.UsersInDB, UserID) {
+		h.UsersInDB = append(h.UsersInDB, UserID)
+		sort.Strings(h.UsersInDB)
 	}
 	return id, err2
 }
@@ -135,7 +140,7 @@ func (h *HandlersWithDBStore) PostHandlerJSON(w http.ResponseWriter, r *http.Req
 		return
 	}
 	UserID, _ := r.Cookie(cookieName)
-	id, err := PostInDBReturnID(h.Rdb, inputURL.CollectedURL, UserID.Value)
+	id, err := h.PostInDBReturnID(inputURL.CollectedURL, UserID.Value)
 	if err != nil {
 		http.Error(w, "No URL recieved", http.StatusBadRequest)
 		return
@@ -150,7 +155,7 @@ func (h *HandlersWithDBStore) PostHandlerJSON(w http.ResponseWriter, r *http.Req
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	w.Write(output)
-	filedb.WriteAll(h.Rdb, *h.Conf)
+	filedb.WriteAll(h.Rdb, *h.Conf, &h.UsersInDB)
 }
 
 func (h *HandlersWithDBStore) EmptyHandler(w http.ResponseWriter, r *http.Request) {
