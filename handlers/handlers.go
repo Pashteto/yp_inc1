@@ -68,7 +68,7 @@ func (h *HandlersWithDBStore) GetAllUrlsHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusNoContent)
+	w.WriteHeader(http.StatusOK)
 	w.Write(output)
 }
 
