@@ -2,64 +2,108 @@ package handlers
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
+	"log"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"time"
 
+	"github.com/Pashteto/yp_inc1/config"
 	"github.com/go-redis/redis/v8"
-	"github.com/gorilla/mux"
 )
 
-var ctx, cancel = context.WithCancel(context.Background())
+var ctx, _ = context.WithCancel(context.Background())
 
-type SpecificHandler struct {
-	Rdb redis.Client
+// Storing data in this structure to get rid of global var DB
+// data is stored using Redis DB
+type HandlersWithDBStore struct {
+	Rdb  redis.Client
+	Conf *config.Config
 }
 
-func (h *SpecificHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-}
+// Get Handler provides with initial URLs stored by their ids
+func (h *HandlersWithDBStore) GetHandler(w http.ResponseWriter, r *http.Request) {
+	id := string(r.URL.Path[1:])
 
-func (h *SpecificHandler) GetHandler(w http.ResponseWriter, r *http.Request) {
-
-	id := mux.Vars(r)["key"]
-	//	fmt.Println(maped)
-	booid, _ := h.Rdb.Exists(ctx, id).Result()
-	// fmt.Println("key2", did)
-	if booid > 0 {
-		long_url, _ := h.Rdb.Get(ctx, id).Result()
-		http.Redirect(w, r, long_url, http.StatusTemporaryRedirect)
-	} else {
-		http.NotFound(w, r)
+	errReadDB := h.pingRedisDB(&h.Rdb)
+	if errReadDB != nil {
+		log.Println(errReadDB)
+		http.Error(w, "DB not resonding", http.StatusInternalServerError)
+		return
 	}
-
+	countID, _ := h.Rdb.Exists(ctx, id).Result()
+	if countID == 0 {
+		w.Header().Set("Content-Type", "text/plain")
+		http.Error(w, fmt.Sprintf("Wrong short URL id: %v", id), http.StatusBadRequest)
+		return
+	}
+	longURL, _ := h.Rdb.Get(ctx, id).Result()
+	http.Redirect(w, r, longURL, http.StatusTemporaryRedirect)
+	//	w.Write([]byte("Redirect"))
 }
 
-/*func (h *SpecificHandler) EmptyGetHandler(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, "Method not allowed", http.StatusBadRequest)
-}
-func (h *SpecificHandler) EmptyPostHandler(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, "Method not allowed", http.StatusBadRequest)
-}*/
-func (h *SpecificHandler) EmptyHandler(w http.ResponseWriter, r *http.Request) {
-	//w.Header().Add("google.com")
-	//	http.Redirect(w, r, "https://google.com", http.StatusTemporaryRedirect)
-	http.Error(w, "Method not allowed", http.StatusBadRequest)
-}
+// Post puts the new url in the storage
+func (h *HandlersWithDBStore) PostHandler(w http.ResponseWriter, r *http.Request) {
+	errReadDB := h.pingRedisDB(&h.Rdb)
+	if errReadDB != nil {
+		log.Println(errReadDB)
+		http.Error(w, "DB not resonding", http.StatusInternalServerError)
+		return
+	}
+	//var shorturl string
 
-func (h *SpecificHandler) PostHandler(w http.ResponseWriter, r *http.Request) {
-
-	var shorturl string
-	defer r.Body.Close()
-	// читаем поток из тела ответа
-	body, err := ioutil.ReadAll(r.Body)
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		fmt.Println(err)
-	} else {
-		id := fmt.Sprint((rand.Intn(1000)))
-		shorturl = "http://localhost/" + id
-		h.Rdb.Set(ctx, id, string(body), 1000*time.Second)
+		log.Println(err)
+		http.Error(w, "unable to parse body", http.StatusBadRequest)
+		return
 	}
-	fmt.Fprintf(w, "%v", shorturl)
+	strbody := string(body)
+	longURL, err := url.Parse(strbody)
+	if err != nil {
+		http.Error(w, "Unable to parse URL", http.StatusBadRequest)
+		return
+	}
+	if len(strbody) == 0 {
+		http.Error(w, "No URL recieved", http.StatusBadRequest)
+		return
+	}
+	if !longURL.IsAbs() {
+		longURL.Scheme = "http"
+	}
+	w.WriteHeader(http.StatusCreated)
+	id := fmt.Sprint((rand.Intn(1000)))
+	h.Rdb.Set(ctx, id, longURL.String(), 1000*time.Second)
+	shorturl := config.String(h.Conf) + "/" + id
+	//data := url.Values{}
+	//data.Set("url", shorturl)
+	//shorturl1, _ := url.Parse(config.String(h.Conf) + "/" + id)
+	//varsh, _ := json.Marshal(shorturl1)
+	w.Write([]byte(shorturl))
+	//w.Write(varsh)
+	//w.Write([]byte(data.Encode()))
+}
+
+func (h *HandlersWithDBStore) EmptyHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusCreated)
+}
+
+func (h *HandlersWithDBStore) pingRedisDB(client *redis.Client) error {
+	if client == nil {
+		return errors.New("no redis db")
+	}
+	_, err := client.Ping(ctx).Result()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type shortenResponse struct {
+	url string `config:"URL"`
+	/*Port   string `config:"SERVER_PORT"`
+	Scheme string `config:"SERVER_SCHEME"`*/
 }
