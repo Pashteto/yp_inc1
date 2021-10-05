@@ -28,19 +28,21 @@ func TestHandlersWithDBStore_GetHandler(t *testing.T) {
 		id             string
 		method         string
 		conf           *config.Config
+		UserList       []string
+		UserCookie     *http.Cookie
 	}
 	repoMock := new(repositoryMock)
 	repoMock.On("Ping", mock.MatchedBy(func(_ context.Context) bool { return true })).Return(nil)
-	//repoMock.On("Get", mock.MatchedBy(func(_ context.Context) bool { return true }), "this_id_is_a_wrong_id").Return("", nil)
-	//repoMock.On("Get", mock.MatchedBy(func(_ context.Context) bool { return true }), "this_id_is_a_correct_id").Return("http://example.com", nil)
 
-	repoMock.On("GetHash", mock.MatchedBy(func(_ context.Context) bool { return true }),
+	repoMock.On("GetValueByKey", mock.MatchedBy(func(_ context.Context) bool { return true }),
 		"this_id_is_a_wrong_id",
-		func(_ string) bool { return true }).Return("", nil)
+		mock.MatchedBy(func(_ string) bool { return true }),
+		mock.MatchedBy(func(_ *[]string) bool { return true })).Return("", nil)
 
-	repoMock.On("Get", mock.MatchedBy(func(_ context.Context) bool { return true }),
+	repoMock.On("GetValueByKey", mock.MatchedBy(func(_ context.Context) bool { return true }),
 		"this_id_is_a_correct_id",
-		func(_ string) bool { return true }).Return("", nil)
+		mock.MatchedBy(func(_ string) bool { return true }),
+		mock.MatchedBy(func(_ *[]string) bool { return true })).Return("http://example.com", nil)
 
 	var conf config.Config
 
@@ -65,6 +67,8 @@ func TestHandlersWithDBStore_GetHandler(t *testing.T) {
 				headerLocation: "",
 				method:         "GET",
 				conf:           &conf,
+				UserList:       []string{"UserID"},
+				UserCookie:     &http.Cookie{Name: "UserID", Value: "UserID", Expires: time.Now().Add(time.Second * 1000)},
 			},
 		},
 		{
@@ -77,6 +81,8 @@ func TestHandlersWithDBStore_GetHandler(t *testing.T) {
 				headerLocation: "http://example.com",
 				method:         "GET",
 				conf:           &conf,
+				UserList:       []string{"UserID"},
+				UserCookie:     &http.Cookie{Name: "UserID", Value: "UserID", Expires: time.Now().Add(time.Second * 1000)},
 			},
 		},
 	}
@@ -84,12 +90,14 @@ func TestHandlersWithDBStore_GetHandler(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 
 			hObj := &HandlersWithDBStore{
-				Rdb:  tt.fields.rdb,
-				Conf: &conf,
+				Rdb:       tt.fields.rdb,
+				Conf:      &conf,
+				UsersInDB: tt.fields.UserList,
 			}
 			request := httptest.NewRequest(tt.fields.method, "/"+tt.fields.id, nil)
 			w := httptest.NewRecorder()
 			h := http.HandlerFunc(hObj.GetHandler)
+			request.AddCookie(tt.fields.UserCookie)
 			h.ServeHTTP(w, request)
 			res := w.Result()
 			defer res.Body.Close()
@@ -117,25 +125,36 @@ func TestHandlersWithDBStore_PostHandler(t *testing.T) {
 		response    string
 		method      string
 		conf        *config.Config
+		UserList    []string
+		UserCookie  *http.Cookie
 	}
 	repoMock := new(repositoryMock)
-	repoMock.On("Ping", mock.MatchedBy(func(_ context.Context) bool { return true })).Return(nil)
-	repoMock.On("ListAllKeys",
-		mock.MatchedBy(func(_ context.Context) bool { return true })).Return([]string{}, nil)
 
-	repoMock.On("Set",
+	repoMock.On("Ping", mock.MatchedBy(func(_ context.Context) bool { return true })).Return(nil)
+
+	repoMock.On("GetValueByKey", mock.MatchedBy(func(_ context.Context) bool { return true }),
+		mock.MatchedBy(func(_ string) bool { return true }),
+		mock.MatchedBy(func(_ string) bool { return true }),
+		mock.MatchedBy(func(_ *[]string) bool { return true })).Return("", nil)
+
+	repoMock.On("ListAllKeysByUser",
+		mock.MatchedBy(
+			func(_ context.Context) bool { return true }),
+		mock.MatchedBy(func(_ string) bool { return true })).Return(make(map[string]string), nil)
+
+	repoMock.On("SetValueByKeyAndUser",
 		mock.MatchedBy(func(_ context.Context) bool { return true }),
+		mock.MatchedBy(func(_ string) bool { return true }),
 		mock.MatchedBy(func(_ string) bool { return true }),
 		"http://example.com",
 		mock.MatchedBy(func(_ time.Duration) bool { return true })).Return(nil)
 
-	repoMock.On("Set", mock.MatchedBy(func(_ context.Context) bool { return true }),
-		mock.MatchedBy(func(_ string) bool { return true }), "",
-		mock.MatchedBy(func(_ time.Duration) bool { return true })).Return(nil)
-
-	repoMock.On("Get",
+	repoMock.On("SetValueByKeyAndUser",
 		mock.MatchedBy(func(_ context.Context) bool { return true }),
-		mock.MatchedBy(func(_ string) bool { return true })).Return("", nil)
+		mock.MatchedBy(func(_ string) bool { return true }),
+		mock.MatchedBy(func(_ string) bool { return true }),
+		"",
+		mock.MatchedBy(func(_ time.Duration) bool { return true })).Return(nil)
 
 	var conf config.Config
 	err := env.Parse(&conf)
@@ -163,6 +182,8 @@ func TestHandlersWithDBStore_PostHandler(t *testing.T) {
 				response:    "http://localhost:8080/81",
 				method:      "POST",
 				conf:        &conf,
+				UserList:    []string{"UserID"},
+				UserCookie:  &http.Cookie{Name: "UserID", Value: "UserID", Expires: time.Now().Add(time.Second * 1000)},
 			},
 		},
 		{
@@ -174,14 +195,17 @@ func TestHandlersWithDBStore_PostHandler(t *testing.T) {
 				response:    "No URL recieved\n",
 				method:      "POST",
 				conf:        &conf,
+				UserList:    []string{"UserID"},
+				UserCookie:  &http.Cookie{Name: "UserID", Value: "UserID", Expires: time.Now().Add(time.Second * 1000)},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			hObj := &HandlersWithDBStore{
-				Rdb:  tt.fields.rdb,
-				Conf: &conf,
+				Rdb:       tt.fields.rdb,
+				Conf:      &conf,
+				UsersInDB: tt.fields.UserList,
 			}
 
 			endpoint := "http://localhost:8080/"
@@ -193,6 +217,7 @@ func TestHandlersWithDBStore_PostHandler(t *testing.T) {
 			}
 			w := httptest.NewRecorder()
 			h := http.HandlerFunc(hObj.PostHandler)
+			request.AddCookie(tt.fields.UserCookie)
 			h.ServeHTTP(w, request)
 			res := w.Result()
 
@@ -222,24 +247,35 @@ func TestHandlersWithDBStore_PostHandlerJSON(t *testing.T) {
 		response    string
 		method      string
 		conf        *config.Config
+		UserList    []string
+		UserCookie  *http.Cookie
 	}
 	repoMock := new(repositoryMock)
 	repoMock.On("Ping", mock.MatchedBy(func(_ context.Context) bool { return true })).Return(nil)
-	repoMock.On("ListAllKeys", mock.MatchedBy(func(_ context.Context) bool { return true })).Return([]string{}, nil)
 
-	repoMock.On("Set",
+	repoMock.On("SetValueByKeyAndUser",
 		mock.MatchedBy(func(_ context.Context) bool { return true }),
+		mock.MatchedBy(func(_ string) bool { return true }),
 		mock.MatchedBy(func(_ string) bool { return true }),
 		"http://example.com",
 		mock.MatchedBy(func(_ time.Duration) bool { return true })).Return(nil)
 
-	repoMock.On("Set", mock.MatchedBy(func(_ context.Context) bool { return true }),
-		mock.MatchedBy(func(_ string) bool { return true }), "",
+	repoMock.On("SetValueByKeyAndUser",
+		mock.MatchedBy(func(_ context.Context) bool { return true }),
+		mock.MatchedBy(func(_ string) bool { return true }),
+		mock.MatchedBy(func(_ string) bool { return true }),
+		"",
 		mock.MatchedBy(func(_ time.Duration) bool { return true })).Return(nil)
 
-	repoMock.On("Get",
-		mock.MatchedBy(func(_ context.Context) bool { return true }),
-		mock.MatchedBy(func(_ string) bool { return true })).Return("", nil)
+	repoMock.On("GetValueByKey", mock.MatchedBy(func(_ context.Context) bool { return true }),
+		mock.MatchedBy(func(_ string) bool { return true }),
+		mock.MatchedBy(func(_ string) bool { return true }),
+		mock.MatchedBy(func(_ *[]string) bool { return true })).Return("", nil)
+
+	repoMock.On("ListAllKeysByUser",
+		mock.MatchedBy(
+			func(_ context.Context) bool { return true }),
+		mock.MatchedBy(func(_ string) bool { return true })).Return(make(map[string]string), nil)
 
 	var conf config.Config
 	err := env.Parse(&conf)
@@ -257,7 +293,6 @@ func TestHandlersWithDBStore_PostHandlerJSON(t *testing.T) {
 		name   string
 		fields fields
 	}{
-		// tests list
 		{
 			name: "Test 1: Post Handler correct response",
 			fields: fields{
@@ -267,6 +302,8 @@ func TestHandlersWithDBStore_PostHandlerJSON(t *testing.T) {
 				response:    "{\"result\":\"http://localhost:8080/887\"}",
 				method:      "POST",
 				conf:        &conf,
+				UserList:    []string{"UserID"},
+				UserCookie:  &http.Cookie{Name: "UserID", Value: "UserID", Expires: time.Now().Add(time.Second * 1000)},
 			},
 		},
 		{
@@ -278,6 +315,8 @@ func TestHandlersWithDBStore_PostHandlerJSON(t *testing.T) {
 				response:    "unable to unmarshal JSON\n",
 				method:      "POST",
 				conf:        &conf,
+				UserList:    []string{"UserID"},
+				UserCookie:  &http.Cookie{Name: "UserID", Value: "UserID", Expires: time.Now().Add(time.Second * 1000)},
 			},
 		},
 		{
@@ -289,14 +328,17 @@ func TestHandlersWithDBStore_PostHandlerJSON(t *testing.T) {
 				response:    "No URL recieved\n",
 				method:      "POST",
 				conf:        &conf,
+				UserList:    []string{"UserID"},
+				UserCookie:  &http.Cookie{Name: "UserID", Value: "UserID", Expires: time.Now().Add(time.Second * 1000)},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			hObj := &HandlersWithDBStore{
-				Rdb:  tt.fields.rdb,
-				Conf: &conf,
+				Rdb:       tt.fields.rdb,
+				Conf:      &conf,
+				UsersInDB: tt.fields.UserList,
 			}
 
 			endpoint := "http://localhost:8080/"
@@ -308,6 +350,7 @@ func TestHandlersWithDBStore_PostHandlerJSON(t *testing.T) {
 			}
 			w := httptest.NewRecorder()
 			h := http.HandlerFunc(hObj.PostHandlerJSON)
+			request.AddCookie(tt.fields.UserCookie)
 			h.ServeHTTP(w, request)
 			res := w.Result()
 
@@ -334,36 +377,29 @@ type repositoryMock struct {
 	mock.Mock
 }
 
-// Set attaches the MOCK repository and set the data
-func (r *repositoryMock) Set(ctx context.Context, key string, value repos.UserAndString, exp time.Duration) error {
-	args := r.Called(ctx, key, value, exp)
-	return args.Error(0)
-}
-
-// Get attaches the MOCK repository and get the data
-
 func (r *repositoryMock) Ping(ctx context.Context) error {
 	args := r.Called(ctx)
 	return args.Error(0)
 }
-func (r *repositoryMock) ListAllKeys(ctx context.Context) ([]string, error) {
-	args := r.Called(ctx)
-	//	var sdfv []string
-	return []string{}, args.Error(1)
-}
-
 func (r *repositoryMock) FlushAllKeys(ctx context.Context) error {
 	args := r.Called(ctx)
 	return args.Error(0)
 }
 
-// Get attaches the redis repository and get the data
-func (r *repositoryMock) GetHash(ctx context.Context, key, UserHash string) (string, error) {
-	args := r.Called(ctx, key, UserHash)
+// GetValueByKey attaches the MOCK repository and get the data
+func (r *repositoryMock) GetValueByKey(ctx context.Context, key, UserHash string, UserList *[]string) (string, error) {
+	args := r.Called(ctx, key, UserHash, UserList)
 	return args.String(0), args.Error(1)
 }
 
-func (r *repositoryMock) ListAllKeysHashed(ctx context.Context, UserHash string) (map[string]string, error) {
-	args := r.Called(ctx)
+// SetValueByKeyAndUser attaches the MOCK repository and set the data
+func (r *repositoryMock) SetValueByKeyAndUser(ctx context.Context, key, UserHash, URL string, exp time.Duration) error {
+	args := r.Called(ctx, key, UserHash, URL, exp)
+	return args.Error(0)
+}
+
+// ListAllKeysByUser lists all keys in the MOCK repository
+func (r *repositoryMock) ListAllKeysByUser(ctx context.Context, UserHash string) (map[string]string, error) {
+	args := r.Called(ctx, UserHash)
 	return make(map[string]string), args.Error(1)
 }
