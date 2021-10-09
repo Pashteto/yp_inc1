@@ -22,4 +22,5 @@ func (cfg *Config) UpdateByFlags(ServAddr, BaseURL, FStorPath *string) (bool, er
 		cfg.FStorPath = *FStorPath
 	}
 	return changed, nil
+
 }

@@ -22,6 +22,7 @@ import (
 func TestHandlersWithDBStore_GetHandler(t *testing.T) {
 	type fields struct {
 		rdb            repos.SetterGetter //redis.Client
+
 		code           int
 		headerLocation string
 		contentType    string
@@ -40,14 +41,17 @@ func TestHandlersWithDBStore_GetHandler(t *testing.T) {
 
 	/*err := config.ReadFile(&conf)
 	 */
+
 	if err != nil {
 		t.Errorf("Unable to read config file conf.json:\t%v", err)
 		return
 	}
+
 	tests := []struct {
 		name   string
 		fields fields
 	}{
+    
 		// tests list
 		{
 			name: "Test 1: Get Handler with wrong id",
@@ -69,6 +73,7 @@ func TestHandlersWithDBStore_GetHandler(t *testing.T) {
 				contentType:    "text/html; charset=utf-8",
 				id:             "this_id_is_a_correct_id",
 				headerLocation: "http://example.com",
+
 				method:         "GET",
 				conf:           &conf,
 			},
@@ -102,16 +107,19 @@ func TestHandlersWithDBStore_GetHandler(t *testing.T) {
 	}
 }
 
+
 //Test of PostHandler
 func TestHandlersWithDBStore_PostHandler(t *testing.T) {
 	type fields struct {
 		rdb         repos.SetterGetter //redis.Client
+
 		code        int
 		postAddress string
 		response    string
 		method      string
 		conf        *config.Config
 	}
+
 	repoMock := new(repositoryMock)
 	repoMock.On("Ping", mock.MatchedBy(func(_ context.Context) bool { return true })).Return(nil)
 	repoMock.On("ListAllKeys",
@@ -133,6 +141,8 @@ func TestHandlersWithDBStore_PostHandler(t *testing.T) {
 
 	var conf config.Config
 	err := env.Parse(&conf)
+
+  
 	if err != nil {
 		t.Errorf("Unable to read config file conf.json:\t%v", err)
 		return
@@ -152,6 +162,7 @@ func TestHandlersWithDBStore_PostHandler(t *testing.T) {
 			name: "Test 1: Post Handler correct response",
 			fields: fields{
 				rdb:         repoMock,
+
 				code:        201,
 				postAddress: "http://example.com",
 				response:    "http://localhost:8080/81",

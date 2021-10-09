@@ -48,12 +48,14 @@ func main() {
 	log.Println("REDIS_HOST:\t", os.Getenv("REDIS_HOST"))
 	log.Println("USER:\t", os.Getenv("USER"))
 
+
 	// initialising redis DB
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     os.Getenv("REDIS_HOST") + ":6379",
 		Password: "", // no password set
 		DB:       0,  // use default DB
 	})
+
 	repa := repos.NewRedisRepository(rdb)
 	err = filedb.CreateDirFileDBExists(conf)
 	if err != nil {
@@ -75,6 +77,7 @@ func main() {
 
 	// конструируем свой сервер
 	server := &http.Server{
+
 		Addr: conf.ServAddr,
 	}
 

@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+
 	"errors"
 	"fmt"
 	"io"
@@ -15,6 +16,7 @@ import (
 	"github.com/Pashteto/yp_inc1/config"
 	filedb "github.com/Pashteto/yp_inc1/filed_history"
 	"github.com/Pashteto/yp_inc1/repos"
+
 )
 
 var ctx, _ = context.WithCancel(context.Background())
@@ -25,6 +27,7 @@ const urlTTL = time.Second * 1000
 // data is stored using Redis DB
 type HandlersWithDBStore struct {
 	Rdb  repos.SetterGetter // redis.Client
+
 	Conf *config.Config
 }
 
@@ -149,4 +152,5 @@ func (t *typeHandlingURL) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	return nil
+
 }
