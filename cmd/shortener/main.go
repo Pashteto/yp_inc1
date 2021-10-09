@@ -2,74 +2,93 @@ package main
 
 import (
 	"context"
+	"flag"
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"syscall"
 
 	"github.com/Pashteto/yp_inc1/config"
+	filedb "github.com/Pashteto/yp_inc1/filed_history"
 	"github.com/Pashteto/yp_inc1/handlers"
-
+	"github.com/Pashteto/yp_inc1/repos"
+	"github.com/caarlos0/env/v6"
 	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/mux"
-	"github.com/joho/godotenv"
 )
-
-/*
-Задание для трека «Go в веб-разработке». Напишите сервис для сокращения длинных URL. Требования:
-- Сервер должен быть доступен по адресу: http://localhost:8080.
-- Сервер должен предоставлять два эндпоинта: POST / и GET /{id}.
-- Эндпоинт POST / принимает в теле запроса строку URL для сокращения и возвращает в ответ правильный сокращённый URL.
-- Эндпоинт GET /{id} принимает в качестве URL параметра идентификатор сокращённого URL и возвращает ответ с кодом 307 и оригинальным URL в HTTP-заголовке Location.
-- Нужно учесть некорректные запросы и возвращать для них ответ с кодом 400.
-*/
 
 var ctx = context.Background()
 
 func main() {
 	var conf config.Config
-	config.ReadFile(&conf)
-	/*if err != nil {
-		log.Println("Unable to read config file conf.json:\t", err)
-	}*/
 
-	godotenv.Load()
-	/*	log.Println(os.Getenv("REDIS_HOST"))
-		log.Println(os.Getenv("APP_BASE_HOST"))
-		log.Println(os.Getenv("APP_PORT"))
-		log.Println(os.Getenv("APP_BASE_URL"))*/
-	conf.RecieveEnv(os.Getenv("APP_BASE_HOST"), os.Getenv("APP_PORT"), os.Getenv("APP_BASE_URL"))
-	/*if erf != nil {
-		log.Println("Unable to read config file conf.json:\t", erf)
-	}*/
+	ServAddrPtr := flag.String("a", ":8080", "SERVER_ADDRESS")
+	BaseURLPtr := flag.String("b", "http://localhost:8080", "BASE_URL")
+	FStorPathPtr := flag.String("f", "../URLs", "FILE_STORAGE_PATH")
+	flag.Parse()
+
+	log.Println("Flags input:\nSERVER_ADDRESS,\tBASE_URL,\tFILE_STORAGE_PATH:\t",
+		*ServAddrPtr, ",",
+		*BaseURLPtr, ",", *FStorPathPtr)
+	err := env.Parse(&conf)
+	if err != nil {
+		log.Fatalf("Unable to Parse env:\t%v", err)
+	}
+	log.Printf("Config:\t%+v", conf)
+
+	changed, err := conf.UpdateByFlags(ServAddrPtr, BaseURLPtr, FStorPathPtr)
+	if changed {
+		log.Printf("Config updated:\t%+v\n", conf)
+	}
+	if err != nil {
+		log.Printf("Flags input error:\t%v\n", err)
+	}
+
+	log.Println("REDIS_HOST:\t", os.Getenv("REDIS_HOST"))
+	log.Println("USER:\t", os.Getenv("USER"))
+
+
 	// initialising redis DB
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     os.Getenv("REDIS_HOST") + ":6379",
 		Password: "", // no password set
 		DB:       0,  // use default DB
 	})
-	defer rdb.Close()
 
-	// Passing the DB to the new obj with Handlers as methods
-	sshand := handlers.HandlersWithDBStore{Rdb: *rdb, Conf: &conf}
+	repa := repos.NewRedisRepository(rdb)
+	err = filedb.CreateDirFileDBExists(conf)
+	if err != nil {
+		log.Fatalf("file exited;\nerr:\t%v; repository:\t%v", err, repa)
+	}
+	err = filedb.UpdateDBSlice(repa, conf)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rdb.Close()
+	sshand := handlers.HandlersWithDBStore{Rdb: repa, Conf: &conf}
 
 	r := mux.NewRouter()
-	r.HandleFunc("/{key}", sshand.GetHandler).Methods("GET") //routing get with the {key}
-	r.HandleFunc("/", sshand.PostHandler).Methods("POST")    //routing post
-	//r.HandleFunc("/", sshand.EmptyHandler)                   //routing post
+	r.HandleFunc("/{key}", sshand.GetHandler).Methods("GET")             //routing get with the {key}
+	r.HandleFunc("/api/shorten", sshand.PostHandlerJSON).Methods("POST") //routing post w JSON
+	r.HandleFunc("/", sshand.PostHandler).Methods("POST")                //routing post
 
 	http.Handle("/", r)
 
 	// конструируем свой сервер
 	server := &http.Server{
-		Addr: ":8080",
-	}
-	server.ListenAndServe()
 
-	// создаём канал для перехвата сигналов OS bbb 	// перенаправляем сигналы OS в этот канал
-	sigint := make(chan os.Signal, 1)
-	signal.Notify(sigint, os.Interrupt)
-	// ожидаем сигнала
-	<-sigint
-	// получаем сигнал OS и начинаем процедуру «мягкой остановки»
-	server.Shutdown(ctx)
+		Addr: conf.ServAddr,
+	}
+
+	sigint := make(chan os.Signal)
+	signal.Notify(sigint, os.Interrupt, syscall.SIGTERM, syscall.SIGINT, syscall.SIGHUP)
+
+	go func() {
+		sig := <-sigint // Blocks here until interrupted
+		log.Println(sig, "\t<<<===\t signal received. Shutdown process initiated.")
+		server.Shutdown(ctx)
+	}()
+
+	server.ListenAndServe()
 }

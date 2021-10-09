@@ -2,5 +2,12 @@
 **/.vscode
 ._.vscode
 .env
-handlers/conf.json
 cmd/shortener/conf.json
+filed_history/URLs.txt
+tmp/URLs
+tmp
+tmpwef/URtjgLs
+tmpwef
+cmd/shortener/URLs
+URLs
+handlers/conf.json

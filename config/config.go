@@ -1,51 +1,26 @@
 package config
 
-import (
-	"encoding/json"
-	"net/url"
-	"os"
-)
-
 type Config struct {
-	Host   string `config:"SERVER_HOST"`
-	Port   string `config:"SERVER_PORT"`
-	Scheme string `config:"SERVER_SCHEME"`
+	ServAddr string `env:"SERVER_ADDRESS" envDefault:":8080"`
+	BaseURL  string `env:"BASE_URL" envDefault:"http://localhost:8080"`
+
+	FStorPath string `env:"FILE_STORAGE_PATH" envDefault:"../URLs" envExpand:"true"`
 }
 
-func ReadFile(cfg *Config) error {
-	f, err := os.Open("conf.json")
-	if err != nil {
-		return err
+func (cfg *Config) UpdateByFlags(ServAddr, BaseURL, FStorPath *string) (bool, error) {
+	changed := false
+	if *BaseURL != "http://localhost:8080" {
+		changed = true
+		cfg.BaseURL = *BaseURL
 	}
-	defer f.Close()
+	if *ServAddr != ":8080" {
+		changed = true
+		cfg.ServAddr = *ServAddr
+	}
+	if *FStorPath != "../URLs" {
+		changed = true
+		cfg.FStorPath = *FStorPath
+	}
+	return changed, nil
 
-	decoder := json.NewDecoder(f)
-	err = decoder.Decode(&cfg)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (cfg *Config) RecieveEnv(envHost, envPort, envURL string) error {
-	if envHost != "" {
-		cfg.Host = envHost
-	}
-	if envPort != "" {
-		cfg.Port = envPort
-	}
-	if envURL != "" {
-		envURLParsed, err := url.Parse(envURL)
-		if err != nil {
-			return err
-		}
-		cfg.Scheme = envURLParsed.Scheme
-		cfg.Host = envURLParsed.Hostname()
-		cfg.Port = envURLParsed.Path
-	}
-	return nil
-}
-
-func String(cfg *Config) string {
-	return cfg.Scheme + "://" + cfg.Host + ":" + cfg.Port
 }
