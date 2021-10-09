@@ -178,9 +178,9 @@ func (h *HandlersWithDBStore) PostHandlerJSON(w http.ResponseWriter, r *http.Req
 	filedb.WriteAll(h.Rdb, *h.Conf, &h.UsersInDB)
 }
 
-func (h *HandlersWithDBStore) EmptyHandler(w http.ResponseWriter, r *http.Request) {
+/*func (h *HandlersWithDBStore) EmptyHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
-}
+}*/
 
 type typeHandlingURL struct {
 	CollectedURL *url.URL
