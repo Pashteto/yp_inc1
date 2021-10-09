@@ -10,12 +10,14 @@ import (
 	"math/rand"
 	"net/http"
 	"net/url"
+	"os"
 	"sort"
 	"time"
 
 	"github.com/Pashteto/yp_inc1/config"
 	filedb "github.com/Pashteto/yp_inc1/filed_history"
 	"github.com/Pashteto/yp_inc1/repos"
+	"github.com/jackc/pgx/v4"
 )
 
 var ctx, _ = context.WithCancel(context.Background())
@@ -43,6 +45,19 @@ func (h *HandlersWithDBStore) GetHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	http.Redirect(w, r, longURL1, http.StatusTemporaryRedirect)
+}
+
+// Get Handler provides with initial URLs stored by their ids
+func (h *HandlersWithDBStore) GetPostgresPingHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/sql")
+	conn, err := pgx.Connect(context.Background(), h.Conf.PostgresURL)
+	defer conn.Close(context.Background())
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
 }
 
 // Get All Urls Handler provides with all URLs stored by single user

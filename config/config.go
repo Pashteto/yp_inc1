@@ -4,10 +4,11 @@ type Config struct {
 	ServAddr string `env:"SERVER_ADDRESS" envDefault:":8080"`
 	BaseURL  string `env:"BASE_URL" envDefault:"http://localhost:8080"`
 
-	FStorPath string `env:"FILE_STORAGE_PATH" envDefault:"../URLs" envExpand:"true"`
+	FStorPath   string `env:"FILE_STORAGE_PATH" envDefault:"../URLs" envExpand:"true"`
+	PostgresURL string `env:"DATABASE_URL" envDefault:"host=localhost port=5432 user=postgres password=kornkorn dbname=mydb sslmode=disable" envExpand:"true"`
 }
 
-func (cfg *Config) UpdateByFlags(ServAddr, BaseURL, FStorPath *string) (bool, error) {
+func (cfg *Config) UpdateByFlags(ServAddr, BaseURL, FStorPath, PostgresURL *string) (bool, error) {
 	changed := false
 	if *BaseURL != "http://localhost:8080" {
 		changed = true
@@ -20,6 +21,10 @@ func (cfg *Config) UpdateByFlags(ServAddr, BaseURL, FStorPath *string) (bool, er
 	if *FStorPath != "../URLs" {
 		changed = true
 		cfg.FStorPath = *FStorPath
+	}
+
+	if *PostgresURL != "host=localhost port=5432 user=postgres password=kornkorn dbname=mydb sslmode=disable" {
+		cfg.PostgresURL = *PostgresURL
 	}
 	return changed, nil
 }

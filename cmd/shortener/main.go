@@ -23,30 +23,30 @@ var ctx = context.Background()
 
 func main() {
 	var conf config.Config
+	defaultPsqlConn := "host=localhost port=5432 user=postgres password=kornkorn dbname=mydb sslmode=disable"
 
 	ServAddrPtr := flag.String("a", ":8080", "SERVER_ADDRESS")
 	BaseURLPtr := flag.String("b", "http://localhost:8080", "BASE_URL")
 	FStorPathPtr := flag.String("f", "../URLs", "FILE_STORAGE_PATH")
+	PostgresURL := flag.String("d", defaultPsqlConn, "DATABASE_URL")
+
 	flag.Parse()
 
 	log.Println("Flags input:\nSERVER_ADDRESS,\tBASE_URL,\tFILE_STORAGE_PATH:\t",
-		*ServAddrPtr, ",",
-		*BaseURLPtr, ",", *FStorPathPtr)
+		*ServAddrPtr, ",", *BaseURLPtr, ",", *FStorPathPtr)
 	err := env.Parse(&conf)
 	if err != nil {
 		log.Fatalf("Unable to Parse env:\t%v", err)
 	}
-	log.Printf("Config:\t%+v", conf)
-
-	changed, err := conf.UpdateByFlags(ServAddrPtr, BaseURLPtr, FStorPathPtr)
+	changed, err := conf.UpdateByFlags(ServAddrPtr, BaseURLPtr, FStorPathPtr, PostgresURL)
 	if changed {
-		log.Printf("Config updated:\t%+v\n", conf)
+		log.Printf("Config updated:SERVER_ADDRESS:\t%v,BASE_URL:\t%v,FILE_STORAGE_PATH:\t%v,\n",
+			conf.ServAddr, conf.BaseURL, conf.FStorPath)
 	}
 	if err != nil {
 		log.Printf("Flags input error:\t%v\n", err)
 	}
 
-	log.Println("REDIS_HOST:\t", os.Getenv("REDIS_HOST"))
 	log.Println("USER:\t", os.Getenv("USER"))
 
 	// initialising redis DB
@@ -55,6 +55,7 @@ func main() {
 		Password: "", // no password set
 		DB:       0,  // use default DB
 	})
+	defer rdb.Close()
 	repa := repos.NewRedisRepository(rdb)
 	err = filedb.CreateDirFileDBExists(conf)
 	if err != nil {
@@ -65,11 +66,12 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer rdb.Close()
 	sshand := handlers.HandlersWithDBStore{Rdb: repa, Conf: &conf, UsersInDB: UserList}
 	r := mux.NewRouter()
-	r.HandleFunc("/user/urls", sshand.GetAllUrlsHandler).Methods("GET")  //routing get with the {key}
-	r.HandleFunc("/{key}", sshand.GetHandler).Methods("GET")             //routing get with the {key}
+	r.HandleFunc("/user/urls", sshand.GetAllUrlsHandler).Methods("GET") //routing get for all the keys of this user
+	r.HandleFunc("/ping", sshand.GetPostgresPingHandler).Methods("GET") //routing ping of the postgres db
+	r.HandleFunc("/{key}", sshand.GetHandler).Methods("GET")            //routing get with the {key}
+
 	r.HandleFunc("/api/shorten", sshand.PostHandlerJSON).Methods("POST") //routing post w JSON
 	r.HandleFunc("/", sshand.PostHandler).Methods("POST")                //routing post
 	r.Use(middlewares.UserCookieCheckGen)
