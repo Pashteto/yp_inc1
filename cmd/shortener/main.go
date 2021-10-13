@@ -47,18 +47,6 @@ func main() {
 		log.Printf("Flags input error:\t%v\n", err)
 	}
 
-	log.Println("USER:\t", os.Getenv("USER"))
-	// REDIS
-	/*
-		// initialising redis DB
-		rdb := redis.NewClient(&redis.Options{
-			Addr:     os.Getenv("REDIS_HOST") + ":6379",
-			Password: "", // no password set
-			DB:       0,  // use default DB
-		})
-		defer rdb.Close()
-	*/
-
 	pool, err := pgxpool.Connect(context.Background(), conf.PostgresURL)
 	if err != nil {
 		log.Fatalf("Postgres connect error:\t%v", err)
