@@ -169,9 +169,11 @@ func (h *HandlersWithDBStore) PostHandlerJSON(w http.ResponseWriter, r *http.Req
 	outputURL.CollectedURL, _ = url.Parse(h.Conf.BaseURL + "/" + id)
 	output, err2 := json.Marshal(outputURL)
 	if err2 != nil {
+		log.Println(err2)
 		http.Error(w, "unable to marshall short URL", http.StatusInternalServerError)
 		return
 	}
+	log.Println("got here in PostHandlerJSON")
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	w.Write(output)
