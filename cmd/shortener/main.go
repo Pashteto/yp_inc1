@@ -23,7 +23,7 @@ var ctx = context.Background()
 
 func main() {
 	var conf config.Config
-	defaultPsqlConn := "host=localhost port=5432 user=postgres password=postgres dbname=praktikum sslmode=disable"
+	defaultPsqlConn := "host=localhost port=5432 user=postgres password=kornkorn dbname=mydb sslmode=disable"
 
 	ServAddrPtr := flag.String("a", ":8080", "SERVER_ADDRESS")
 	BaseURLPtr := flag.String("b", "http://localhost:8080", "BASE_URL")
@@ -38,6 +38,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("Unable to Parse env:\t%v", err)
 	}
+	log.Fatalf("Show this messege")
+
 	changed, err := conf.UpdateByFlags(ServAddrPtr, BaseURLPtr, FStorPathPtr, PostgresURL)
 	if changed {
 		log.Printf("Config updated:SERVER_ADDRESS:\t%v,BASE_URL:\t%v,FILE_STORAGE_PATH:\t%v,\n",
@@ -47,7 +49,7 @@ func main() {
 		log.Printf("Flags input error:\t%v\n", err)
 	}
 
-	pool, err := pgxpool.Connect(context.Background(), conf.PostgresURL)
+	pool, err := pgxpool.Connect(ctx, conf.PostgresURL)
 	if err != nil {
 		log.Println("Exit was eeeee") // DELETE
 		log.Fatalf("Postgres connect error:\t%v", err)
