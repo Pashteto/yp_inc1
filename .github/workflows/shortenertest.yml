@@ -189,3 +189,11 @@ jobs:
               -database-dsn='postgres://postgres:postgres@postgres:5432/praktikum?sslmode=disable'
         env:
           REDIS_HOST: redis
+      - name: "Code increment #14"
+        if: always()
+        run: |
+          shortenertest -test.v -test.run=^TestIteration14$ \
+              -binary-path=cmd/shortener/shortener \
+              -database-dsn='postgres://postgres:postgres@postgres:5432/praktikum?sslmode=disable'
+        env:
+          REDIS_HOST: redis
