@@ -23,7 +23,7 @@ var ctx = context.Background()
 
 func main() {
 	var conf config.Config
-	defaultPsqlConn := "host=localhost port=5432 user=postgres password=kornkorn dbname=mydb sslmode=disable"
+	defaultPsqlConn := "postgres://postgres:postgres@postgres:5432/praktikum?sslmode=disable" //"host=localhost port=5432 user=postgres password=kornkorn dbname=mydb sslmode=disable"
 
 	ServAddrPtr := flag.String("a", ":8080", "SERVER_ADDRESS")
 	BaseURLPtr := flag.String("b", "http://localhost:8080", "BASE_URL")
@@ -38,7 +38,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Unable to Parse env:\t%v", err)
 	}
-	log.Fatalf("Show this messege")
+	//	log.Fatalf("Show this messege")
 
 	changed, err := conf.UpdateByFlags(ServAddrPtr, BaseURLPtr, FStorPathPtr, PostgresURL)
 	if changed {
