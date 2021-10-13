@@ -2,16 +2,23 @@ package repos
 
 import (
 	"context"
+<<<<<<< HEAD
 	"log"
 	"sort"
 	"time"
 
 	//	"github.com/go-redis/redis/v8" REDIS
 	"github.com/jackc/pgx/v4/pgxpool"
+=======
+	"time"
+
+	"github.com/go-redis/redis/v8"
+>>>>>>> main
 )
 
 // Repository represent the repositories
 type SetterGetter interface {
+<<<<<<< HEAD
 	Ping(ctx context.Context) error
 	FlushAllKeys(ctx context.Context) error
 
@@ -19,10 +26,18 @@ type SetterGetter interface {
 	GetValueByKey(ctx context.Context, key, UserHash string, UserList *[]string) (string, error)
 
 	ListAllKeysByUser(ctx context.Context, UserHash string) (map[string]string, error)
+=======
+	Set(ctx context.Context, key string, value interface{}, exp time.Duration) error
+	Get(ctx context.Context, key string) (string, error)
+	Ping(ctx context.Context) error
+	ListAllKeys(ctx context.Context) ([]string, error)
+	FlushAllKeys(ctx context.Context) error
+>>>>>>> main
 }
 
 // repository represent the repository model
 type repository struct {
+<<<<<<< HEAD
 	//REDIS
 	//Client   redis.Cmdable
 	connPool *pgxpool.Pool
@@ -114,4 +129,39 @@ func (r *repository) ListAllKeysByUser(ctx context.Context, User string) (map[st
 func Contains(s *[]string, searchterm string) bool {
 	i := sort.SearchStrings(*s, searchterm)
 	return i < len(*s) && (*s)[i] == searchterm
+=======
+	Client redis.Cmdable
+}
+
+// NewRedisRepository will create an object that represent the Repository interface
+func NewRedisRepository(Client redis.Cmdable) SetterGetter {
+	return &repository{Client}
+}
+
+// Set attaches the redis repository and set the data
+func (r *repository) Set(ctx context.Context, key string, value interface{}, exp time.Duration) error {
+
+	return r.Client.Set(ctx, key, value, exp).Err()
+}
+
+// Get attaches the redis repository and get the data
+func (r *repository) Get(ctx context.Context, key string) (string, error) {
+	get := r.Client.Get(ctx, key)
+	return get.Result()
+}
+
+func (r *repository) Ping(ctx context.Context) error {
+	return r.Client.Ping(ctx).Err()
+}
+
+func (r *repository) ListAllKeys(ctx context.Context) ([]string, error) {
+	//r.Client.FlushAll(ctx)
+	return r.Client.Keys(ctx, "*").Result()
+
+	//return []string {}, true
+}
+
+func (r *repository) FlushAllKeys(ctx context.Context) error {
+	return r.Client.FlushAll(ctx).Err()
+>>>>>>> main
 }
