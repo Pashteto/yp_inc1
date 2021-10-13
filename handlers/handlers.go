@@ -35,10 +35,13 @@ type HandlersWithDBStore struct {
 // Get Handler provides with initial URLs stored by their ids
 func (h *HandlersWithDBStore) GetHandler(w http.ResponseWriter, r *http.Request) {
 	id := string(r.URL.Path[1:])
+	log.Println("got here in GetHandler")
+
 	//	Checked r.cookie in middleware. It should be there
 	UserID, _ := r.Cookie(cookieName)
 	longURL1, _ := h.Rdb.GetValueByKey(ctx, id, UserID.Value, &h.UsersInDB)
 	if longURL1 == "" {
+		log.Println("got longURL1 == 0 in GetHandler")
 		w.Header().Set("Content-Type", "text/plain")
 		http.Error(w, fmt.Sprintf("Wrong short URL id: %v", id), http.StatusBadRequest)
 		return
