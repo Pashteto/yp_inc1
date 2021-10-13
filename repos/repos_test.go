@@ -5,12 +5,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-redis/redis/v8"
+	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 func Test_repository_Get(t *testing.T) {
 	type fields struct {
-		Client redis.Cmdable
+		//		Client redis.Cmdable
+		connPool *pgxpool.Pool
 	}
 	type args struct {
 		ctx context.Context
@@ -28,7 +29,7 @@ func Test_repository_Get(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := &repository{
-				Client: tt.fields.Client,
+				connPool: tt.fields.connPool,
 			}
 			r.Ping(context.Background())
 			/*	got, err := r.Get(tt.args.ctx, tt.args.key)
@@ -45,7 +46,7 @@ func Test_repository_Get(t *testing.T) {
 
 func Test_repository_Set(t *testing.T) {
 	type fields struct {
-		Client redis.Cmdable
+		connPool *pgxpool.Pool
 	}
 	type args struct {
 		ctx   context.Context
@@ -64,7 +65,7 @@ func Test_repository_Set(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := &repository{
-				Client: tt.fields.Client,
+				connPool: tt.fields.connPool,
 			}
 			r.Ping(context.Background())
 			/*

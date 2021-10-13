@@ -15,8 +15,8 @@ import (
 	middlewares "github.com/Pashteto/yp_inc1/mddlwrs"
 	"github.com/Pashteto/yp_inc1/repos"
 	"github.com/caarlos0/env/v6"
-	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/mux"
+	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 var ctx = context.Background()
@@ -48,18 +48,29 @@ func main() {
 	}
 
 	log.Println("USER:\t", os.Getenv("USER"))
+	// REDIS
+	/*
+		// initialising redis DB
+		rdb := redis.NewClient(&redis.Options{
+			Addr:     os.Getenv("REDIS_HOST") + ":6379",
+			Password: "", // no password set
+			DB:       0,  // use default DB
+		})
+		defer rdb.Close()
+	*/
 
-	// initialising redis DB
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     os.Getenv("REDIS_HOST") + ":6379",
-		Password: "", // no password set
-		DB:       0,  // use default DB
-	})
-	defer rdb.Close()
-	repa := repos.NewRedisRepository(rdb)
+	pool, err := pgxpool.Connect(context.Background(), conf.PostgresURL)
+	if err != nil {
+		log.Fatalf("Postgres connect error:\t%v", err)
+	}
+	defer pool.Close()
+	repa, err := repos.NewRepoWitnTable(ctx, pool)
+	if err != nil {
+		log.Fatalf("Error creating repository:\terr:\t%v; repository:\t%v", err, repa)
+	}
 	err = filedb.CreateDirFileDBExists(conf)
 	if err != nil {
-		log.Fatalf("file exited;\nerr:\t%v; repository:\t%v", err, repa)
+		log.Fatalf("file exited;\nerr:\t%v", err)
 	}
 
 	UserList, err := filedb.UpdateDBSlice(repa, conf)

@@ -6,7 +6,8 @@ import (
 	"sort"
 	"time"
 
-	"github.com/go-redis/redis/v8"
+	//	"github.com/go-redis/redis/v8" REDIS
+	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 // Repository represent the repositories
@@ -22,37 +23,57 @@ type SetterGetter interface {
 
 // repository represent the repository model
 type repository struct {
-	Client redis.Cmdable
+	//REDIS
+	//Client   redis.Cmdable
+	connPool *pgxpool.Pool
 }
 
 // NewRedisRepository will create an object that represent the Repository interface
-func NewRedisRepository(Client redis.Cmdable) SetterGetter {
-	return &repository{Client}
+func NewRepoWitnTable(ctx context.Context, connPool *pgxpool.Pool) (SetterGetter, error) {
+	sqlCreate := `CREATE TABLE IF NOT EXISTS shorturls(id serial, userid text, keyurl text, longurl text);`
+	oi, err := connPool.Exec(ctx, sqlCreate)
+	log.Println(oi, err, connPool.Ping(ctx))
+
+	return &repository{connPool}, err
+	//{Client, connPool}, err
 }
 
 func (r *repository) Ping(ctx context.Context) error {
-	return r.Client.Ping(ctx).Err()
+	return r.connPool.Ping(ctx)
+	//REDIS
+	//	return r.Client.Ping(ctx).Err()
 }
 
 func (r *repository) FlushAllKeys(ctx context.Context) error {
-	return r.Client.FlushAll(ctx).Err()
+	//REDIS
+	// 	r.Client.FlushAll(ctx)
+	_, err := r.connPool.Exec(ctx, "TRUNCATE TABLE shorturls;")
+	return err
+	//REDIS
+	//	return r.Client.FlushAll(ctx).Err()
 }
 
 func (r *repository) SetValueByKeyAndUser(ctx context.Context, key, User, URL string, exp time.Duration) error {
-	err := r.Client.HSet(ctx, User, key, URL).Err()
-	//	data, _ := r.Client.HGetAll(ctx, UserHash).Result()
-	//	log.Println(UserHash, "\tin HSET\t", data)
-	what := r.Client.Expire(ctx, User, exp).Err()
-	if what != nil {
-		return what
-	}
+
+	//  REDIS
+	/*	err1 := r.Client.HSet(ctx, User, key, URL).Err()
+		err2 := r.Client.Expire(ctx, User, exp).Err()
+		if err1 != nil {
+			log.Println(err1, err2)
+		}*/
+	sqlInsert := "INSERT INTO shorturls (userid , keyurl , longurl) VALUES ($1, $2, $3)"
+	_, err := r.connPool.Exec(ctx, sqlInsert, User, key, URL)
 	return err
 }
 
 // Get stored URL value by Key w/o username
 func (r *repository) GetValueByKey(ctx context.Context, key, User string, UserList *[]string) (string, error) {
-	//	data, _ := r.Client.HGetAll(ctx, UserHash).Result()
-	//	log.Println(UserHash, "\tin r.Client.HGetAll\t", data)
+	queryrow := `SELECT longurl from shorturls WHERE keyurl = $1`
+	row := r.connPool.QueryRow(context.Background(), queryrow, key)
+	var res string
+	//log.Println(row.Scan(&res))
+	return res, row.Scan(&res)
+	/* REDIS
 	var res string
 	for _, UserFromList := range *UserList {
 		res, _ = r.Client.HGet(ctx, UserFromList, key).Result()
@@ -62,10 +83,32 @@ func (r *repository) GetValueByKey(ctx context.Context, key, User string, UserLi
 		}
 	}
 	return "", nil
+	*/
 }
 
 func (r *repository) ListAllKeysByUser(ctx context.Context, User string) (map[string]string, error) {
-	return r.Client.HGetAll(ctx, User).Result()
+	AllKeys := make(map[string]string)
+
+	queryrows := `SELECT keyurl , longurl from shorturls WHERE userid = $1`
+	rows, err := r.connPool.Query(context.Background(), queryrows, User)
+	if err != nil {
+		log.Println(err)
+	}
+	// обязательно закрываем после завершения функции
+	defer rows.Close()
+	// пробегаем по всем записям
+	for rows.Next() {
+		var key, URL string
+		err = rows.Scan(&key, &URL)
+		if err != nil {
+			return AllKeys, err
+		}
+		AllKeys[key] = URL
+	}
+	log.Println(AllKeys)
+	return AllKeys, nil
+	//REDIS
+	//return r.Client.HGetAll(ctx, User).Result()
 }
 
 func Contains(s *[]string, searchterm string) bool {
