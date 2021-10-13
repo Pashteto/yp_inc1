@@ -23,7 +23,7 @@ var ctx = context.Background()
 
 func main() {
 	var conf config.Config
-	defaultPsqlConn := "host=localhost port=5432 user=postgres password=kornkorn dbname=mydb sslmode=disable"
+	defaultPsqlConn := "host=localhost port=5432 user=postgres password=postgres dbname=praktikum sslmode=disable"
 
 	ServAddrPtr := flag.String("a", ":8080", "SERVER_ADDRESS")
 	BaseURLPtr := flag.String("b", "http://localhost:8080", "BASE_URL")
