@@ -183,9 +183,10 @@ func (h *HandlersWithDBStore) PostHandlerJSON(w http.ResponseWriter, r *http.Req
 	filedb.WriteAll(h.Rdb, *h.Conf, &h.UsersInDB)
 }
 
-/*func (h *HandlersWithDBStore) EmptyHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusCreated)
-}*/
+// Post puts the new url in the storage with JSON input
+func (h *HandlersWithDBStore) PostBatchHandler(w http.ResponseWriter, r *http.Request) {
+
+}
 
 type typeHandlingURL struct {
 	CollectedURL *url.URL

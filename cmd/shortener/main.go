@@ -74,11 +74,13 @@ func main() {
 	}
 	sshand := handlers.HandlersWithDBStore{Rdb: repa, Conf: &conf, UsersInDB: UserList}
 	r := mux.NewRouter()
-	r.HandleFunc("/user/urls", sshand.GetAllUrlsHandler).Methods("GET")  //routing get for all the keys of this user
-	r.HandleFunc("/api/shorten", sshand.PostHandlerJSON).Methods("POST") //routing post w JSON
-	r.HandleFunc("/ping", sshand.GetPostgresPingHandler).Methods("GET")  //routing ping of the postgres db
-	r.HandleFunc("/{key}", sshand.GetHandler).Methods("GET")             //routing get with the {key}
-	r.HandleFunc("/", sshand.PostHandler).Methods("POST")                //routing post
+
+	r.HandleFunc("/api/shorten/batch", sshand.PostBatchHandler).Methods("POST") //routing batch post
+	r.HandleFunc("/user/urls", sshand.GetAllUrlsHandler).Methods("GET")         //routing get for all the keys of this user
+	r.HandleFunc("/api/shorten", sshand.PostHandlerJSON).Methods("POST")        //routing post w JSON
+	r.HandleFunc("/ping", sshand.GetPostgresPingHandler).Methods("GET")         //routing ping of the postgres db
+	r.HandleFunc("/{key}", sshand.GetHandler).Methods("GET")                    //routing get with the {key}
+	r.HandleFunc("/", sshand.PostHandler).Methods("POST")                       //routing post
 	r.Use(middlewares.UserCookieCheckGen)
 	r.Use(middlewares.GzipMiddlewareRead)
 	r.Use(middlewares.GzipMiddlewareWrite)
