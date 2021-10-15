@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"encoding/csv"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -52,8 +53,6 @@ func (h *HandlersWithDBStore) GetHandler(w http.ResponseWriter, r *http.Request)
 // Get Handler provides with initial URLs stored by their ids
 func (h *HandlersWithDBStore) GetPostgresPingHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/sql")
-	//conn, err := pgx.Connect(context.Background(), h.Conf.PostgresURL)
-	//defer conn.Close(context.Background())
 	err := h.Rdb.Ping(ctx)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
@@ -185,7 +184,40 @@ func (h *HandlersWithDBStore) PostHandlerJSON(w http.ResponseWriter, r *http.Req
 
 // Post puts the new url in the storage with JSON input
 func (h *HandlersWithDBStore) PostBatchHandler(w http.ResponseWriter, r *http.Request) {
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "unable to parse body", http.StatusBadRequest)
+		return
+	}
 
+	inputURL := typeHandlingURL{}
+	err = json.Unmarshal(body, &inputURL)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "unable to unmarshal JSON", http.StatusBadRequest)
+		return
+	}
+	/*
+		UserID, _ := r.Cookie(cookieName)
+		id, err := h.PostInDBReturnID(inputURL.CollectedURL, UserID.Value)
+		if err != nil {
+			http.Error(w, "No URL recieved", http.StatusBadRequest)
+			return
+		}
+		outputURL := typeHandlingURL{}
+		outputURL.CollectedURL, _ = url.Parse(h.Conf.BaseURL + "/" + id)
+		output, err2 := json.Marshal(outputURL)
+		if err2 != nil {
+			log.Println(err2)
+			http.Error(w, "unable to marshall short URL", http.StatusInternalServerError)
+			return
+		}
+		log.Println("got here in PostHandlerJSON")
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		w.Write(output)
+		filedb.WriteAll(h.Rdb, *h.Conf, &h.UsersInDB)*/
 }
 
 type typeHandlingURL struct {
@@ -217,6 +249,43 @@ func (t *typeHandlingURL) UnmarshalJSON(data []byte) error {
 }
 
 type iDShortURLReflex struct {
-	ID      string `json:"short_url"`
+	ID      string `json:"short_url,correlation_id"`
 	LongURL string `json:"original_url"`
+}
+
+/*
+
+type iDShortURLReflex2 struct {
+	ID      string `json:"correlation_id"`
+	LongURL string `json:"original_url"`
+}
+
+[
+    {
+        "correlation_id": "<строковый идентификатор>",
+        "original_url": "<URL для сокращения>"
+    },
+    ...
+]
+*/
+
+func readVideos(r *csv.Reader) ([]iDShortURLReflex, error) {
+	var videos []iDShortURLReflex
+	for {
+		l, err := r.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			log.Panic(err)
+		}
+
+		v := iDShortURLReflex{
+			ID:      l[0],
+			LongURL: l[1],
+		}
+
+		videos = append(videos, v)
+	}
+	return videos, nil
 }
