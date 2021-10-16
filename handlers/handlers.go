@@ -196,7 +196,6 @@ func (h *HandlersWithDBStore) PostBatchHandler(w http.ResponseWriter, r *http.Re
 	if i != j {
 		log.Println("Summ of ", j-i, " URLs were dropped")
 	}
-
 	fmt.Println(inputURL, outputURL)
 	output, err2 := json.MarshalIndent(outputURL, "", "  ")
 	if err2 != nil {
@@ -204,7 +203,7 @@ func (h *HandlersWithDBStore) PostBatchHandler(w http.ResponseWriter, r *http.Re
 		http.Error(w, "unable to marshall short URLs", http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusCreated)
 	w.Write(output)
 	filedb.WriteAll(h.Rdb, *h.Conf, &h.UsersInDB)
