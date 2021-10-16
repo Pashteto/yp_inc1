@@ -173,6 +173,8 @@ func (h *HandlersWithDBStore) PostHandlerJSON(w http.ResponseWriter, r *http.Req
 func (h *HandlersWithDBStore) PostBatchHandler(w http.ResponseWriter, r *http.Request) {
 	UserID, _ := r.Cookie(cookieName)
 	body, err := io.ReadAll(r.Body)
+	w.Header().Set("Content-Type", "application/json")
+
 	if err != nil {
 		http.Error(w, "unable to read request", http.StatusBadRequest)
 		return
@@ -203,7 +205,6 @@ func (h *HandlersWithDBStore) PostBatchHandler(w http.ResponseWriter, r *http.Re
 		http.Error(w, "unable to marshall short URLs", http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusCreated)
 	w.Write(output)
 	filedb.WriteAll(h.Rdb, *h.Conf, &h.UsersInDB)
