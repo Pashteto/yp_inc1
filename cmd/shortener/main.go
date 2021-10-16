@@ -52,7 +52,6 @@ func main() {
 
 	pool, err := pgxpool.Connect(ctx, conf.PostgresURL)
 	if err != nil {
-		log.Println("Exit was eeeee") // DELETE
 		log.Fatalf("Postgres connect error:\t%v", err)
 	}
 	defer pool.Close()
@@ -62,14 +61,11 @@ func main() {
 	}
 	err = filedb.CreateDirFileDBExists(conf)
 	if err != nil {
-		log.Println("Exit was oi") // DELETE
-
 		log.Fatalf("file exited;\nerr:\t%v", err)
 	}
 
 	UserList, err := filedb.UpdateDBSlice(repa, conf)
 	if err != nil {
-		log.Println("Exit was here") // DELETE
 		log.Fatal(err)
 	}
 	sshand := handlers.HandlersWithDBStore{Rdb: repa, Conf: &conf, UsersInDB: UserList}

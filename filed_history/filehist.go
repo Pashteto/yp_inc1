@@ -109,30 +109,6 @@ func CreateDirFileDBExists(cfg config.Config) error {
 	return nil
 }
 
-////
-/*
-// Set attaches the redis repository and set the data
-func (r *repository) Set(ctx context.Context, key string, value UserAndString, exp time.Duration) error {
-	p, err := json.Marshal(value)
-	if err != nil {
-		return err
-	}
-	return r.Client.Set(ctx, key, p, exp).Err()
-}
-
-// Get attaches the redis repository and get the data
-func (r *repository) Get(ctx context.Context, key string) (UserAndString, error) {
-	var res UserAndString
-	p, err := r.Client.Get(ctx, key).Result()
-	if err != nil {
-		return UserAndString{"", ""}, err
-	}
-	err = json.Unmarshal([]byte(p), &res)
-	return res, err
-}
-*/
-///
-
 func UpdateDBSlice(rdb repos.SetterGetter, cfg config.Config) ([]string, error) {
 	fileName := cfg.FStorPath
 	reader, err := NewFReader(fileName)
