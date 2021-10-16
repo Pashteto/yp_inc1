@@ -76,10 +76,10 @@ func (h *HandlersWithDBStore) GetAllUrlsHandler(w http.ResponseWriter, r *http.R
 		http.Error(w, "no URLs", http.StatusNoContent)
 		return
 	}
-	sliceIDURL := make([]iDShortURLReflex1, rf)
+	sliceIDURL := make([]iDShortURLReflex, rf)
 	i := 0
 	for key, val := range keys {
-		sliceIDURL[i] = iDShortURLReflex1{ID: h.Conf.BaseURL + "/" + key, LongURL: val}
+		sliceIDURL[i] = iDShortURLReflex{ID: h.Conf.BaseURL + "/" + key, LongURL: val}
 		i++
 	}
 	output, err2 := json.MarshalIndent(sliceIDURL, "", "    ")
@@ -179,12 +179,12 @@ func (h *HandlersWithDBStore) PostBatchHandler(w http.ResponseWriter, r *http.Re
 		http.Error(w, "unable to read request", http.StatusBadRequest)
 		return
 	}
-	inputURL, err := ReadUBatchURLs(body)
+	inputURL, err := readUBatchURLs(body)
 	if err != nil {
 		http.Error(w, "unable to unmarshal JSON", http.StatusBadRequest)
 		return
 	}
-	outputURL := h.ConvertBatchURLs(inputURL, UserID.Value)
+	outputURL, setsForDB := h.convertBatchURLs(inputURL, UserID.Value)
 	if err != nil {
 		http.Error(w, "unable to unmarshal JSON", http.StatusBadRequest)
 		return
@@ -198,17 +198,21 @@ func (h *HandlersWithDBStore) PostBatchHandler(w http.ResponseWriter, r *http.Re
 	if i != j {
 		log.Println("Summ of ", j-i, " URLs were dropped")
 	}
-	fmt.Println(inputURL, outputURL)
-	output, err2 := json.MarshalIndent(outputURL, "", "  ")
-	if err2 != nil {
-		log.Println(err2)
-		http.Error(w, "unable to marshall short URLs", http.StatusInternalServerError)
+
+	err = h.Rdb.SetBatch(ctx, setsForDB)
+	if err != nil {
+		http.Error(w, "Error writing in DB", http.StatusBadRequest)
 		return
 	}
+	output, err := json.MarshalIndent(outputURL, "", "  ")
+	if err != nil {
+		http.Error(w, "Error marshalling in responce", http.StatusBadRequest)
+		return
+	}
+
 	w.WriteHeader(http.StatusCreated)
 	w.Write(output)
 	filedb.WriteAll(h.Rdb, *h.Conf, &h.UsersInDB)
-
 }
 
 type typeHandlingURL struct {
@@ -239,7 +243,7 @@ func (t *typeHandlingURL) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-type iDShortURLReflex1 struct {
+type iDShortURLReflex struct {
 	ID      string `json:"short_url"`
 	LongURL string `json:"original_url"`
 }
@@ -252,7 +256,7 @@ type batchShortURLsID struct {
 	ShortURL string `json:"short_url"`
 }
 
-func ReadUBatchURLs(body []byte) ([]batchURLsID, error) {
+func readUBatchURLs(body []byte) ([]batchURLsID, error) {
 	URLsID := []batchURLsID{}
 	buf := bytes.NewBuffer(body)
 	encoder := json.NewEncoder(buf)
@@ -264,58 +268,26 @@ func ReadUBatchURLs(body []byte) ([]batchURLsID, error) {
 	return URLsID, nil
 }
 
-/*
-type FReader interface {
-	ReadUserAndPairs() ([]batchURLsID, error)
-	Close() error
-}
-type fReader struct {
-	file    *os.File
-	decoder *json.Decoder
-}
-
-func NewFReader(fileName string) (*fReader, error) {
-	file, err := os.OpenFile(fileName, os.O_RDONLY|os.O_CREATE, 0777)
-	if err != nil {
-		return nil, err
-	}
-	return &fReader{
-		file:    file,
-		decoder: json.NewDecoder(file),
-	}, nil
-}
-func (c *fReader) ReadUserAndPairs() ([]batchURLsID, error) {
-	userPairs := []batchURLsID{}
-	if err := c.decoder.Decode(&userPairs); err != nil {
-		if err.Error() != "EOF" {
-			return nil, err
-		}
-	}
-	return userPairs, nil
-}
-
-func (c *fReader) Close() error {
-	return c.file.Close()
-}
-*/
-
-func (h *HandlersWithDBStore) ConvertBatchURLs(batchlongURLs []batchURLsID, UserID string) []batchShortURLsID {
+func (h *HandlersWithDBStore) convertBatchURLs(batchlongURLs []batchURLsID, UserID string) ([]batchShortURLsID, repos.BatchSetsForDB) {
 	var shortURLsIDs []batchShortURLsID
-	for i, batchlongURL := range batchlongURLs {
+	setsDB := repos.BatchSetsForDB{UserID: UserID, Pairs: []repos.IDShortURL{}}
+	for _, batchlongURL := range batchlongURLs {
 		longURL, err := url.Parse(batchlongURL.LongURL)
 		if err != nil {
-			removeIndex(batchlongURLs, i)
 			continue
 		}
 		if err = longURLcorrector(longURL); err != nil {
-			removeIndex(batchlongURLs, i)
 			continue
 		}
 		id := h.idSearch(UserID)
-		shortURLsID := batchShortURLsID{ID: batchlongURL.ID, ShortURL: h.Conf.BaseURL + "/" + id}
+		ShortURL := h.Conf.BaseURL + "/" + id
+		shortURLsID := batchShortURLsID{ID: batchlongURL.ID, ShortURL: ShortURL}
 		shortURLsIDs = append(shortURLsIDs, shortURLsID)
+
+		addInDB := repos.IDShortURL{ShortURL: ShortURL, LongURL: longURL.String()}
+		setsDB.Pairs = append(setsDB.Pairs, addInDB)
 	}
-	return shortURLsIDs
+	return shortURLsIDs, setsDB
 }
 
 func longURLcorrector(longURL *url.URL) error {
@@ -338,8 +310,4 @@ func (h *HandlersWithDBStore) idSearch(UserID string) string {
 		}
 	}
 	return id
-}
-
-func removeIndex(s []batchURLsID, index int) []batchURLsID {
-	return append(s[:index], s[index+1:]...)
 }

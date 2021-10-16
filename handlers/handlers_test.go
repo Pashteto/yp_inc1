@@ -403,3 +403,7 @@ func (r *repositoryMock) ListAllKeysByUser(ctx context.Context, UserHash string)
 	args := r.Called(ctx, UserHash)
 	return make(map[string]string), args.Error(1)
 }
+
+func (r *repositoryMock) SetBatch(ctx context.Context, SetsForDB repos.BatchSetsForDB) error {
+	return nil
+}

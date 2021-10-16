@@ -2,6 +2,7 @@ package repos
 
 import (
 	"context"
+	"errors"
 	"log"
 	"sort"
 	"time"
@@ -18,11 +19,21 @@ type SetterGetter interface {
 	GetValueByKey(ctx context.Context, key, UserHash string, UserList *[]string) (string, error)
 
 	ListAllKeysByUser(ctx context.Context, UserHash string) (map[string]string, error)
+	SetBatch(ctx context.Context, SetsForDB BatchSetsForDB) error
 }
 
 // repository represent the repository model
 type repository struct {
 	connPool *pgxpool.Pool
+}
+
+type BatchSetsForDB struct {
+	UserID string
+	Pairs  []IDShortURL
+}
+type IDShortURL struct {
+	ShortURL string
+	LongURL  string
 }
 
 // NewRedisRepository will create an object that represent the Repository interface
@@ -76,6 +87,18 @@ func (r *repository) ListAllKeysByUser(ctx context.Context, User string) (map[st
 		AllKeys[key] = URL
 	}
 	return AllKeys, nil
+}
+
+func (r *repository) SetBatch(ctx context.Context, SetsForDB BatchSetsForDB) error {
+
+	for _, Pair := range SetsForDB.Pairs {
+		sqlInsert := "INSERT INTO shorturls (userid , keyurl , longurl) VALUES ($1, $2, $3)"
+		_, err := r.connPool.Exec(ctx, sqlInsert, SetsForDB.UserID, Pair.ShortURL, Pair.LongURL)
+		if err != nil {
+			return errors.New("No way to implement this")
+		}
+	}
+	return nil
 }
 
 func Contains(s *[]string, searchterm string) bool {
