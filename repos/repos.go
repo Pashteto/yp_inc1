@@ -95,7 +95,7 @@ func (r *repository) SetBatch(ctx context.Context, SetsForDB BatchSetsForDB) err
 		sqlInsert := "INSERT INTO shorturls (userid , keyurl , longurl) VALUES ($1, $2, $3)"
 		_, err := r.connPool.Exec(ctx, sqlInsert, SetsForDB.UserID, Pair.ShortURL, Pair.LongURL)
 		if err != nil {
-			return errors.New("No way to implement this")
+			return errors.New("no way to implement this")
 		}
 	}
 	return nil

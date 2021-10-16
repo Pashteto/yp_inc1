@@ -185,10 +185,6 @@ func (h *HandlersWithDBStore) PostBatchHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 	outputURL, setsForDB := h.convertBatchURLs(inputURL, UserID.Value)
-	if err != nil {
-		http.Error(w, "unable to unmarshal JSON", http.StatusBadRequest)
-		return
-	}
 	i := len(outputURL)
 	j := len(inputURL)
 	if i == 0 {
