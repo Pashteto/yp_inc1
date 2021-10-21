@@ -61,6 +61,7 @@ func (r *repository) SetValueByKeyAndUser(ctx context.Context, key, User, URL st
 
 // Get stored URL value by Key w/o username
 func (r *repository) GetValueByKey(ctx context.Context, key, User string, UserList *[]string) (string, error) {
+
 	queryrow := `SELECT longurl from shorturls WHERE keyurl = $1`
 	row := r.connPool.QueryRow(context.Background(), queryrow, key)
 	var res string

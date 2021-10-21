@@ -193,7 +193,7 @@ func (h *HandlersWithDBStore) PostBatchHandler(w http.ResponseWriter, r *http.Re
 	if i != j {
 		log.Println("Summ of ", j-i, " URLs were dropped")
 	}
-
+	///
 	err = h.Rdb.SetBatch(ctx, setsForDB)
 	if err != nil {
 		http.Error(w, "Error writing in DB", http.StatusBadRequest)
@@ -275,8 +275,8 @@ func (h *HandlersWithDBStore) convertBatchURLs(batchlongURLs []batchURLsID, User
 			continue
 		}
 		id := h.idSearch(UserID)
-		ShortURL := h.Conf.BaseURL + "/" + id
-		shortURLsID := batchShortURLsID{ID: batchlongURL.ID, ShortURL: ShortURL}
+		ShortURL := id //h.Conf.BaseURL + "/" + id
+		shortURLsID := batchShortURLsID{ID: batchlongURL.ID, ShortURL: h.Conf.BaseURL + "/" + id}
 		shortURLsIDs = append(shortURLsIDs, shortURLsID)
 
 		addInDB := repos.IDShortURL{ShortURL: ShortURL, LongURL: longURL.String()}
