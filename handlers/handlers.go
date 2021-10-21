@@ -172,9 +172,8 @@ func (h *HandlersWithDBStore) PostHandlerJSON(w http.ResponseWriter, r *http.Req
 // Post puts the new url in the storage with JSON input
 func (h *HandlersWithDBStore) PostBatchHandler(w http.ResponseWriter, r *http.Request) {
 	UserID, _ := r.Cookie(cookieName)
-	body, err := io.ReadAll(r.Body)
 	w.Header().Set("Content-Type", "application/json")
-
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "unable to read request", http.StatusBadRequest)
 		return
@@ -255,9 +254,9 @@ type batchShortURLsID struct {
 func readUBatchURLs(body []byte) ([]batchURLsID, error) {
 	URLsID := []batchURLsID{}
 	buf := bytes.NewBuffer(body)
-	encoder := json.NewEncoder(buf)
-	encoder.SetEscapeHTML(false)
-	err := encoder.Encode(URLsID)
+	encoder := json.NewDecoder(buf)
+	//encoder.SetEscapeHTML(false)
+	err := encoder.Decode(&URLsID)
 	if err != nil {
 		return nil, err
 	}
