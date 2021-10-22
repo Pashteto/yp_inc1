@@ -116,7 +116,7 @@ func (h *HandlersWithDBStore) PostHandler(w http.ResponseWriter, r *http.Request
 			http.Error(w, "No URL recieved", http.StatusBadRequest)
 			return
 		}
-		id, _ = h.Rdb.GetIdByLong(ctx, longURL.String(), UserID.Value, &h.UsersInDB)
+		id, _ = h.Rdb.GetIDByLong(ctx, longURL.String(), UserID.Value, &h.UsersInDB)
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusConflict)
@@ -168,7 +168,7 @@ func (h *HandlersWithDBStore) PostHandlerJSON(w http.ResponseWriter, r *http.Req
 			return
 		}
 
-		id, _ = h.Rdb.GetIdByLong(ctx, inputURL.CollectedURL.String(), UserID.Value, &h.UsersInDB)
+		id, _ = h.Rdb.GetIDByLong(ctx, inputURL.CollectedURL.String(), UserID.Value, &h.UsersInDB)
 		w.WriteHeader(http.StatusConflict)
 	}
 	outputURL := typeHandlingURL{}

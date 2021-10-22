@@ -17,7 +17,7 @@ type SetterGetter interface {
 
 	SetValueByKeyAndUser(ctx context.Context, key, UserHash, URL string, exp time.Duration) error
 	GetValueByKey(ctx context.Context, key, UserHash string, UserList *[]string) (string, error)
-	GetIdByLong(ctx context.Context, longURL, User string, UserList *[]string) (string, error)
+	GetIDByLong(ctx context.Context, longURL, User string, UserList *[]string) (string, error)
 
 	ListAllKeysByUser(ctx context.Context, UserHash string) (map[string]string, error)
 	SetBatch(ctx context.Context, SetsForDB BatchSetsForDB) error
@@ -39,9 +39,9 @@ type IDShortURL struct {
 
 // NewRedisRepository will create an object that represent the Repository interface
 func NewRepoWitnTable(ctx context.Context, connPool *pgxpool.Pool) (SetterGetter, error) {
-	_, err := connPool.Exec(ctx, "DROP TABLE IF EXISTS shorturls")
+	// connPool.Exec(ctx, "DROP TABLE IF EXISTS shorturls")
 	sqlCreate := `CREATE TABLE shorturls(id serial, userid text, keyurl text, longurl text, UNIQUE(longurl));`
-	_, err = connPool.Exec(ctx, sqlCreate)
+	_, err := connPool.Exec(ctx, sqlCreate)
 	return &repository{connPool}, err
 }
 
@@ -78,7 +78,7 @@ func (r *repository) GetValueByKey(ctx context.Context, key, User string, UserLi
 }
 
 // Get stored URL value by Key w/o username
-func (r *repository) GetIdByLong(ctx context.Context, longURL, User string, UserList *[]string) (string, error) {
+func (r *repository) GetIDByLong(ctx context.Context, longURL, User string, UserList *[]string) (string, error) {
 	queryrow := `SELECT keyurl from shorturls WHERE longurl = $1`
 	row := r.connPool.QueryRow(context.Background(), queryrow, longURL)
 	var res string

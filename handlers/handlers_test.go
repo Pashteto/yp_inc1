@@ -393,7 +393,7 @@ func (r *repositoryMock) GetValueByKey(ctx context.Context, key, UserHash string
 }
 
 // GetValueByKey attaches the MOCK repository and get the data
-func (r *repositoryMock) GetIdByLong(ctx context.Context, longURL, UserHash string, UserList *[]string) (string, error) {
+func (r *repositoryMock) GetIDByLong(ctx context.Context, longURL, UserHash string, UserList *[]string) (string, error) {
 	args := r.Called(ctx, longURL, UserHash, UserList)
 	return args.String(0), args.Error(1)
 }
