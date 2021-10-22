@@ -40,7 +40,7 @@ type IDShortURL struct {
 // NewRedisRepository will create an object that represent the Repository interface
 func NewRepoWitnTable(ctx context.Context, connPool *pgxpool.Pool) (SetterGetter, error) {
 	// connPool.Exec(ctx, "DROP TABLE IF EXISTS shorturls")
-	sqlCreate := `CREATE TABLE shorturls(id serial, userid text, keyurl text, longurl text, UNIQUE(longurl));`
+	sqlCreate := `CREATE TABLE IF NOT EXISTS shorturls(id serial, userid text, keyurl text, longurl text, UNIQUE(longurl));`
 	_, err := connPool.Exec(ctx, sqlCreate)
 	return &repository{connPool}, err
 }
