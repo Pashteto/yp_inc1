@@ -10,6 +10,10 @@ type Config struct {
 }
 
 func (cfg *Config) UpdateByFlags(ServAddr, BaseURL, FStorPath, PostgresURL *string) (bool, error) {
+	// if *PostgresURL != "host=localhost port=5432 user=postgres password=kornkorn dbname=mydb sslmode=disable" {
+	if *PostgresURL != "postgres://postgres:postgres@postgres:5432/praktikum?sslmode=disable" {
+		cfg.PostgresURL = *PostgresURL
+	}
 	changed := false
 	if *BaseURL != "http://localhost:8080" {
 		changed = true
@@ -22,10 +26,6 @@ func (cfg *Config) UpdateByFlags(ServAddr, BaseURL, FStorPath, PostgresURL *stri
 	if *FStorPath != "../URLs" {
 		changed = true
 		cfg.FStorPath = *FStorPath
-	}
-	// if *PostgresURL != "host=localhost port=5432 user=postgres password=kornkorn dbname=mydb sslmode=disable" {
-	if *PostgresURL != "postgres://postgres:postgres@postgres:5432/praktikum?sslmode=disable" {
-		cfg.PostgresURL = *PostgresURL
 	}
 	return changed, nil
 }

@@ -117,14 +117,14 @@ func (h *HandlersWithDBStore) PostHandler(w http.ResponseWriter, r *http.Request
 			return
 		}
 		id, _ = h.Rdb.GetIDByLong(ctx, longURL.String(), UserID.Value, &h.UsersInDB)
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusConflict)
-	w.Write([]byte(h.Conf.BaseURL + "/" + id))
-	if err == nil {
+		w.WriteHeader(http.StatusConflict)
+	} else {
 		w.WriteHeader(http.StatusCreated)
 		filedb.WriteAll(h.Rdb, *h.Conf, &h.UsersInDB)
 	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write([]byte(h.Conf.BaseURL + "/" + id))
+
 }
 
 func (h *HandlersWithDBStore) PostInDBReturnID(longURL *url.URL, UserID string) (string, error) {
@@ -170,6 +170,9 @@ func (h *HandlersWithDBStore) PostHandlerJSON(w http.ResponseWriter, r *http.Req
 
 		id, _ = h.Rdb.GetIDByLong(ctx, inputURL.CollectedURL.String(), UserID.Value, &h.UsersInDB)
 		w.WriteHeader(http.StatusConflict)
+	} else {
+		w.WriteHeader(http.StatusCreated)
+		filedb.WriteAll(h.Rdb, *h.Conf, &h.UsersInDB)
 	}
 	outputURL := typeHandlingURL{}
 	outputURL.CollectedURL, _ = url.Parse(h.Conf.BaseURL + "/" + id)
@@ -180,10 +183,6 @@ func (h *HandlersWithDBStore) PostHandlerJSON(w http.ResponseWriter, r *http.Req
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	if err != nil {
-		w.WriteHeader(http.StatusCreated)
-		filedb.WriteAll(h.Rdb, *h.Conf, &h.UsersInDB)
-	}
 	w.Write(output)
 }
 
