@@ -106,16 +106,25 @@ func (h *HandlersWithDBStore) PostHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 	UserID, _ := r.Cookie(cookieName)
-	id, err := h.PostInDBReturnID(longURL, UserID.Value)
+
+	var id string
+	id, err = h.PostInDBReturnID(longURL, UserID.Value)
 
 	if err != nil {
-		http.Error(w, "No URL recieved", http.StatusBadRequest)
-		return
+		errExists := errors.New(`longURL exists`)
+		if err.Error() != errExists.Error() {
+			http.Error(w, "No URL recieved", http.StatusBadRequest)
+			return
+		}
+		id, _ = h.Rdb.GetIdByLong(ctx, longURL.String(), UserID.Value, &h.UsersInDB)
 	}
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
+	w.WriteHeader(http.StatusConflict)
 	w.Write([]byte(h.Conf.BaseURL + "/" + id))
-	filedb.WriteAll(h.Rdb, *h.Conf, &h.UsersInDB)
+	if err == nil {
+		w.WriteHeader(http.StatusCreated)
+		filedb.WriteAll(h.Rdb, *h.Conf, &h.UsersInDB)
+	}
 }
 
 func (h *HandlersWithDBStore) PostInDBReturnID(longURL *url.URL, UserID string) (string, error) {
@@ -150,10 +159,18 @@ func (h *HandlersWithDBStore) PostHandlerJSON(w http.ResponseWriter, r *http.Req
 		return
 	}
 	UserID, _ := r.Cookie(cookieName)
-	id, err := h.PostInDBReturnID(inputURL.CollectedURL, UserID.Value)
+	var id string
+	id, err = h.PostInDBReturnID(inputURL.CollectedURL, UserID.Value)
 	if err != nil {
-		http.Error(w, "No URL recieved", http.StatusBadRequest)
-		return
+		errExists := errors.New(`longURL exists`)
+		if err.Error() != errExists.Error() {
+			http.Error(w, "No URL recieved", http.StatusBadRequest)
+			return
+		}
+
+		id, _ = h.Rdb.GetIdByLong(ctx, inputURL.CollectedURL.String(), UserID.Value, &h.UsersInDB)
+		w.WriteHeader(http.StatusConflict)
+		w.Write([]byte(h.Conf.BaseURL + "/" + id))
 	}
 	outputURL := typeHandlingURL{}
 	outputURL.CollectedURL, _ = url.Parse(h.Conf.BaseURL + "/" + id)
@@ -164,9 +181,11 @@ func (h *HandlersWithDBStore) PostHandlerJSON(w http.ResponseWriter, r *http.Req
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
+	if err != nil {
+		w.WriteHeader(http.StatusCreated)
+		filedb.WriteAll(h.Rdb, *h.Conf, &h.UsersInDB)
+	}
 	w.Write(output)
-	filedb.WriteAll(h.Rdb, *h.Conf, &h.UsersInDB)
 }
 
 // Post puts the new url in the storage with JSON input

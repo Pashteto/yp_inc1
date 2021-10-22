@@ -17,6 +17,7 @@ type SetterGetter interface {
 
 	SetValueByKeyAndUser(ctx context.Context, key, UserHash, URL string, exp time.Duration) error
 	GetValueByKey(ctx context.Context, key, UserHash string, UserList *[]string) (string, error)
+	GetIdByLong(ctx context.Context, longURL, User string, UserList *[]string) (string, error)
 
 	ListAllKeysByUser(ctx context.Context, UserHash string) (map[string]string, error)
 	SetBatch(ctx context.Context, SetsForDB BatchSetsForDB) error
@@ -38,8 +39,9 @@ type IDShortURL struct {
 
 // NewRedisRepository will create an object that represent the Repository interface
 func NewRepoWitnTable(ctx context.Context, connPool *pgxpool.Pool) (SetterGetter, error) {
-	sqlCreate := `CREATE TABLE IF NOT EXISTS shorturls(id serial, userid text, keyurl text, longurl text);`
-	_, err := connPool.Exec(ctx, sqlCreate)
+	_, err := connPool.Exec(ctx, "DROP TABLE IF EXISTS shorturls")
+	sqlCreate := `CREATE TABLE shorturls(id serial, userid text, keyurl text, longurl text, UNIQUE(longurl));`
+	_, err = connPool.Exec(ctx, sqlCreate)
 	return &repository{connPool}, err
 }
 
@@ -54,8 +56,15 @@ func (r *repository) FlushAllKeys(ctx context.Context) error {
 }
 
 func (r *repository) SetValueByKeyAndUser(ctx context.Context, key, User, URL string, exp time.Duration) error {
-	sqlInsert := "INSERT INTO shorturls (userid , keyurl , longurl) VALUES ($1, $2, $3)"
-	_, err := r.connPool.Exec(ctx, sqlInsert, User, key, URL)
+	sqlInsert := "INSERT INTO shorturls (userid , keyurl , longurl) VALUES ($1, $2, $3) ON CONFLICT (longurl) DO NOTHING;"
+	conflictCheck, err := r.connPool.Exec(ctx, sqlInsert, User, key, URL)
+	/*	if err.Error() == pgerrcode.UniqueViolation {
+		return errors.New("no way to implement this")
+	}*/
+
+	if conflictCheck.String() == "INSERT 0 0" {
+		return errors.New(`longURL exists`)
+	}
 	return err
 }
 
@@ -64,6 +73,14 @@ func (r *repository) GetValueByKey(ctx context.Context, key, User string, UserLi
 
 	queryrow := `SELECT longurl from shorturls WHERE keyurl = $1`
 	row := r.connPool.QueryRow(context.Background(), queryrow, key)
+	var res string
+	return res, row.Scan(&res)
+}
+
+// Get stored URL value by Key w/o username
+func (r *repository) GetIdByLong(ctx context.Context, longURL, User string, UserList *[]string) (string, error) {
+	queryrow := `SELECT keyurl from shorturls WHERE longurl = $1`
+	row := r.connPool.QueryRow(context.Background(), queryrow, longURL)
 	var res string
 	return res, row.Scan(&res)
 }
