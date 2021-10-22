@@ -392,6 +392,12 @@ func (r *repositoryMock) GetValueByKey(ctx context.Context, key, UserHash string
 	return args.String(0), args.Error(1)
 }
 
+// GetValueByKey attaches the MOCK repository and get the data
+func (r *repositoryMock) GetIdByLong(ctx context.Context, longURL, UserHash string, UserList *[]string) (string, error) {
+	args := r.Called(ctx, longURL, UserHash, UserList)
+	return args.String(0), args.Error(1)
+}
+
 // SetValueByKeyAndUser attaches the MOCK repository and set the data
 func (r *repositoryMock) SetValueByKeyAndUser(ctx context.Context, key, UserHash, URL string, exp time.Duration) error {
 	args := r.Called(ctx, key, UserHash, URL, exp)

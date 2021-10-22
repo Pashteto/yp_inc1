@@ -170,7 +170,6 @@ func (h *HandlersWithDBStore) PostHandlerJSON(w http.ResponseWriter, r *http.Req
 
 		id, _ = h.Rdb.GetIdByLong(ctx, inputURL.CollectedURL.String(), UserID.Value, &h.UsersInDB)
 		w.WriteHeader(http.StatusConflict)
-		w.Write([]byte(h.Conf.BaseURL + "/" + id))
 	}
 	outputURL := typeHandlingURL{}
 	outputURL.CollectedURL, _ = url.Parse(h.Conf.BaseURL + "/" + id)
