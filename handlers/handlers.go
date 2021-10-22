@@ -145,6 +145,7 @@ func (h *HandlersWithDBStore) PostInDBReturnID(longURL *url.URL, UserID string) 
 
 // Post puts the new url in the storage with JSON input
 func (h *HandlersWithDBStore) PostHandlerJSON(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Println(err)
@@ -182,7 +183,6 @@ func (h *HandlersWithDBStore) PostHandlerJSON(w http.ResponseWriter, r *http.Req
 		http.Error(w, "unable to marshall short URL", http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
 	w.Write(output)
 }
 
