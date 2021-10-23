@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/Pashteto/yp_inc1/config"
-	filedb "github.com/Pashteto/yp_inc1/filed_history"
 	"github.com/Pashteto/yp_inc1/repos"
 )
 
@@ -120,7 +119,7 @@ func (h *HandlersWithDBStore) PostHandler(w http.ResponseWriter, r *http.Request
 		w.WriteHeader(http.StatusConflict)
 	} else {
 		w.WriteHeader(http.StatusCreated)
-		filedb.WriteAll(h.Rdb, *h.Conf, &h.UsersInDB)
+		//	filedb.WriteAll(h.Rdb, *h.Conf, &h.UsersInDB)
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.Write([]byte(h.Conf.BaseURL + "/" + id))
@@ -173,7 +172,7 @@ func (h *HandlersWithDBStore) PostHandlerJSON(w http.ResponseWriter, r *http.Req
 		w.WriteHeader(http.StatusConflict)
 	} else {
 		w.WriteHeader(http.StatusCreated)
-		filedb.WriteAll(h.Rdb, *h.Conf, &h.UsersInDB)
+		//	filedb.WriteAll(h.Rdb, *h.Conf, &h.UsersInDB)
 	}
 	outputURL := typeHandlingURL{}
 	outputURL.CollectedURL, _ = url.Parse(h.Conf.BaseURL + "/" + id)
@@ -224,7 +223,7 @@ func (h *HandlersWithDBStore) PostBatchHandler(w http.ResponseWriter, r *http.Re
 
 	w.WriteHeader(http.StatusCreated)
 	w.Write(output)
-	filedb.WriteAll(h.Rdb, *h.Conf, &h.UsersInDB)
+	//	filedb.WriteAll(h.Rdb, *h.Conf, &h.UsersInDB)
 }
 
 type typeHandlingURL struct {

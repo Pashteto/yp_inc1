@@ -30,8 +30,6 @@ func GzipMiddlewareRead(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		defer r.Body.Close()
-		// log.Println("GzipMiddlewareRead usage")
-
 		switch r.Header.Get("Content-Encoding") {
 		case "gzip":
 			reader, err := gzip.NewReader(r.Body)
@@ -52,8 +50,6 @@ func GzipMiddlewareWrite(next http.Handler) http.Handler {
 		// проверяем, что клиент поддерживает gzip-сжатие
 		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
 			next.ServeHTTP(w, r)
-			// log.Println("GzipMiddlewareWrite midlware easy")
-
 			return
 		}
 		// создаём gzip.Writer поверх текущего w
@@ -62,13 +58,9 @@ func GzipMiddlewareWrite(next http.Handler) http.Handler {
 			io.WriteString(w, err.Error())
 			log.Printf("failed to compress data: %v", err)
 			next.ServeHTTP(w, r)
-			// log.Println("GzipMiddlewareWrite err")
-
 			return
 		}
 		defer gz.Close()
-		// log.Println("GzipMiddlewareWrite next")
-
 		w.Header().Set("Content-Encoding", "gzip")
 		// передаём обработчику страницы переменную типа gzipWriter для вывода данных
 		next.ServeHTTP(gzipWriter{ResponseWriter: w, Writer: gz}, r)
