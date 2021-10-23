@@ -2,53 +2,124 @@ package repos
 
 import (
 	"context"
+	"errors"
+	"log"
+	"sort"
 	"time"
 
-	"github.com/go-redis/redis/v8"
+	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 // Repository represent the repositories
 type SetterGetter interface {
-	Set(ctx context.Context, key string, value interface{}, exp time.Duration) error
-	Get(ctx context.Context, key string) (string, error)
 	Ping(ctx context.Context) error
-	ListAllKeys(ctx context.Context) ([]string, error)
 	FlushAllKeys(ctx context.Context) error
+
+	SetValueByKeyAndUser(ctx context.Context, key, UserHash, URL string, exp time.Duration) error
+	GetValueByKey(ctx context.Context, key, UserHash string, UserList *[]string) (string, error)
+	GetIDByLong(ctx context.Context, longURL, User string, UserList *[]string) (string, error)
+
+	ListAllKeysByUser(ctx context.Context, UserHash string) (map[string]string, error)
+	SetBatch(ctx context.Context, SetsForDB BatchSetsForDB) error
 }
 
 // repository represent the repository model
 type repository struct {
-	Client redis.Cmdable
+	connPool *pgxpool.Pool
+}
+
+type BatchSetsForDB struct {
+	UserID string
+	Pairs  []IDShortURL
+}
+type IDShortURL struct {
+	ShortURL string
+	LongURL  string
 }
 
 // NewRedisRepository will create an object that represent the Repository interface
-func NewRedisRepository(Client redis.Cmdable) SetterGetter {
-	return &repository{Client}
-}
-
-// Set attaches the redis repository and set the data
-func (r *repository) Set(ctx context.Context, key string, value interface{}, exp time.Duration) error {
-
-	return r.Client.Set(ctx, key, value, exp).Err()
-}
-
-// Get attaches the redis repository and get the data
-func (r *repository) Get(ctx context.Context, key string) (string, error) {
-	get := r.Client.Get(ctx, key)
-	return get.Result()
+func NewRepoWitnTable(ctx context.Context, connPool *pgxpool.Pool) (SetterGetter, error) {
+	// connPool.Exec(ctx, "DROP TABLE IF EXISTS shorturls")
+	sqlCreate := `CREATE TABLE IF NOT EXISTS shorturls(id serial, userid text, keyurl text, longurl text, UNIQUE(longurl));`
+	_, err := connPool.Exec(ctx, sqlCreate)
+	return &repository{connPool}, err
 }
 
 func (r *repository) Ping(ctx context.Context) error {
-	return r.Client.Ping(ctx).Err()
-}
-
-func (r *repository) ListAllKeys(ctx context.Context) ([]string, error) {
-	//r.Client.FlushAll(ctx)
-	return r.Client.Keys(ctx, "*").Result()
-
-	//return []string {}, true
+	return r.connPool.Ping(ctx)
 }
 
 func (r *repository) FlushAllKeys(ctx context.Context) error {
-	return r.Client.FlushAll(ctx).Err()
+
+	_, err := r.connPool.Exec(ctx, "TRUNCATE TABLE shorturls;")
+	return err
+}
+
+func (r *repository) SetValueByKeyAndUser(ctx context.Context, key, User, URL string, exp time.Duration) error {
+	sqlInsert := "INSERT INTO shorturls (userid , keyurl , longurl) VALUES ($1, $2, $3) ON CONFLICT (longurl) DO NOTHING;"
+	conflictCheck, err := r.connPool.Exec(ctx, sqlInsert, User, key, URL)
+	/*	if err.Error() == pgerrcode.UniqueViolation {
+		return errors.New("no way to implement this")
+	}*/
+
+	if conflictCheck.String() == "INSERT 0 0" {
+		return errors.New(`longURL exists`)
+	}
+	return err
+}
+
+// Get stored URL value by Key w/o username
+func (r *repository) GetValueByKey(ctx context.Context, key, User string, UserList *[]string) (string, error) {
+
+	queryrow := `SELECT longurl from shorturls WHERE keyurl = $1`
+	row := r.connPool.QueryRow(context.Background(), queryrow, key)
+	var res string
+	return res, row.Scan(&res)
+}
+
+// Get stored URL value by Key w/o username
+func (r *repository) GetIDByLong(ctx context.Context, longURL, User string, UserList *[]string) (string, error) {
+	queryrow := `SELECT keyurl from shorturls WHERE longurl = $1`
+	row := r.connPool.QueryRow(context.Background(), queryrow, longURL)
+	var res string
+	return res, row.Scan(&res)
+}
+
+func (r *repository) ListAllKeysByUser(ctx context.Context, User string) (map[string]string, error) {
+	AllKeys := make(map[string]string)
+
+	queryrows := `SELECT keyurl , longurl from shorturls WHERE userid = $1`
+	rows, err := r.connPool.Query(context.Background(), queryrows, User)
+	if err != nil {
+		log.Println(err)
+	}
+	// обязательно закрываем после завершения функции
+	defer rows.Close()
+	// пробегаем по всем записям
+	for rows.Next() {
+		var key, URL string
+		err = rows.Scan(&key, &URL)
+		if err != nil {
+			return AllKeys, err
+		}
+		AllKeys[key] = URL
+	}
+	return AllKeys, nil
+}
+
+func (r *repository) SetBatch(ctx context.Context, SetsForDB BatchSetsForDB) error {
+
+	for _, Pair := range SetsForDB.Pairs {
+		sqlInsert := "INSERT INTO shorturls (userid , keyurl , longurl) VALUES ($1, $2, $3)"
+		_, err := r.connPool.Exec(ctx, sqlInsert, SetsForDB.UserID, Pair.ShortURL, Pair.LongURL)
+		if err != nil {
+			return errors.New("no way to implement this")
+		}
+	}
+	return nil
+}
+
+func Contains(s *[]string, searchterm string) bool {
+	i := sort.SearchStrings(*s, searchterm)
+	return i < len(*s) && (*s)[i] == searchterm
 }
